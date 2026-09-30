@@ -597,11 +597,13 @@ button {
   gap: 18px;
 }
 
-.category-control {
+.category-control,
+.city-control {
   flex: 1 1 100%;
 }
 
-.category-control .chip-row {
+.category-control .chip-row,
+.city-control .chip-row {
   flex: 1;
   flex-wrap: nowrap;
   padding: 3px 2px 8px;
@@ -612,16 +614,19 @@ button {
   scroll-snap-type: x proximity;
 }
 
-.category-control .filter-chip {
+.category-control .filter-chip,
+.city-control .filter-chip {
   flex: 0 0 auto;
   scroll-snap-align: start;
 }
 
-.category-control .chip-row::-webkit-scrollbar {
+.category-control .chip-row::-webkit-scrollbar,
+.city-control .chip-row::-webkit-scrollbar {
   height: 4px;
 }
 
-.category-control .chip-row::-webkit-scrollbar-thumb {
+.category-control .chip-row::-webkit-scrollbar-thumb,
+.city-control .chip-row::-webkit-scrollbar-thumb {
   border-radius: 999px;
   background: rgba(247, 237, 207, 0.24);
 }

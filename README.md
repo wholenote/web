@@ -29,11 +29,11 @@ npm run preview
 - Edit the pages and components in `src` to add or update sections of the website.
 - Edit `src/data/recommendations.ts` for cities, restaurant recommendations, personal notes, suggested orders, and tiers.
 - Set each restaurant's `tier` to `"recommended"` or `"favorite"`. The combined All list is shown by default.
-- Every recommendation uses real `{ lat, lng }` coordinates to place it on the Austin-area map.
+- Every recommendation uses real `{ lat, lng }` coordinates to place it on the selected city's map.
 - Add a real `directionsUrl` to a recommendation to show its external Directions link.
 - Add a city center and zoom level when expanding the guide to another city.
 
-The interactive map uses Leaflet and OpenStreetMap tiles with visible attribution. The card list retains all recommendation details for accessibility. Austin, Houston, and Las Vegas are configured, and the data structure supports adding more cities later.
+The interactive map uses Leaflet and OpenStreetMap tiles with visible attribution. The card list retains all recommendation details for accessibility, and the data structure supports adding more cities over time.
 
 ## Deploy after localhost approval
 

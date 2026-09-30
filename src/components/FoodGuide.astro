@@ -1,5 +1,5 @@
 ---
-import { categories, cities, recommendations, tiers } from "../data/recommendations";
+import { categories, cities, prices, recommendations, tiers } from "../data/recommendations";
 
 const defaultCity = cities[0]?.id ?? "";
 const defaultTier = tiers[0]?.id ?? "all";
@@ -35,6 +35,22 @@ const cityItemNumber = (id: string, cityId: string) =>
             aria-pressed={index === 0 ? "true" : "false"}
           >
             {tier.label}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <div class="control-group price-control">
+      <span class="control-label">Price</span>
+      <div class="chip-row" role="group" aria-label="Filter by price">
+        {prices.map((price, index) => (
+          <button
+            class="filter-chip price-chip"
+            type="button"
+            data-price-button={price}
+            aria-pressed={index === 0 ? "true" : "false"}
+          >
+            {price}
           </button>
         ))}
       </div>
@@ -107,6 +123,7 @@ const cityItemNumber = (id: string, cityId: string) =>
             data-city={item.cityId}
             data-category={item.category}
             data-tier={item.tier}
+            data-price={item.price}
             hidden={item.cityId !== defaultCity}
           >
             {item.tier === "favorite" && (
@@ -151,7 +168,11 @@ const cityItemNumber = (id: string, cityId: string) =>
   import L from "leaflet";
   import "leaflet/dist/leaflet.css";
   import { categoryIcons, cities, recommendations, tiers } from "../data/recommendations";
-  import type { Recommendation, RecommendationTier } from "../data/recommendations";
+  import type {
+    Recommendation,
+    RecommendationPrice,
+    RecommendationTier,
+  } from "../data/recommendations";
 
   const guide = document.querySelector<HTMLElement>("[data-food-guide]");
   const mapElement = guide?.querySelector<HTMLElement>("[data-real-map]");
@@ -162,11 +183,13 @@ const cityItemNumber = (id: string, cityId: string) =>
     let activeCity = guide.dataset.defaultCity ?? defaultCityData.id;
     let activeTier = (guide.dataset.defaultTier ?? "all") as RecommendationTier | "all";
     let activeCategory = "All";
+    let activePrice: RecommendationPrice | "All" = "All";
     let activeRecommendation = "";
 
     const cityButtons = Array.from(guide.querySelectorAll<HTMLButtonElement>("[data-city-button]"));
     const tierButtons = Array.from(guide.querySelectorAll<HTMLButtonElement>("[data-tier-button]"));
     const categoryButtons = Array.from(guide.querySelectorAll<HTMLButtonElement>("[data-category-button]"));
+    const priceButtons = Array.from(guide.querySelectorAll<HTMLButtonElement>("[data-price-button]"));
     const cards = Array.from(guide.querySelectorAll<HTMLElement>("[data-recommendation]"));
     const resultCount = guide.querySelector<HTMLElement>("[data-result-count]");
     const emptyState = guide.querySelector<HTMLElement>("[data-empty-state]");
@@ -213,7 +236,8 @@ const cityItemNumber = (id: string, cityId: string) =>
       const points = guideRecommendations
         .filter((item) => item.cityId === activeCity
           && (activeTier === "all" || item.tier === activeTier)
-          && (activeCategory === "All" || item.category === activeCategory))
+          && (activeCategory === "All" || item.category === activeCategory)
+          && (activePrice === "All" || item.price === activePrice))
         .map((item) => [item.coordinates.lat, item.coordinates.lng] as L.LatLngTuple);
       if (points.length > 1) {
         map.fitBounds(L.latLngBounds(points), { padding: [42, 42], maxZoom: 12 });
@@ -250,6 +274,19 @@ const cityItemNumber = (id: string, cityId: string) =>
     };
 
     const updateGuide = (refitMap = false) => {
+      const cityCounts = new Map(
+        cities.map((city) => [
+          city.id,
+          guideRecommendations.filter(
+            (item) => item.cityId === city.id
+              && (activeTier === "all" || item.tier === activeTier),
+          ).length,
+        ]),
+      );
+      if ((cityCounts.get(activeCity) ?? 0) === 0) {
+        activeCity = cities.find((city) => (cityCounts.get(city.id) ?? 0) > 0)?.id ?? activeCity;
+      }
+
       const cityCategories = new Set<string>(
         guideRecommendations
           .filter((item) => item.cityId === activeCity
@@ -260,23 +297,38 @@ const cityItemNumber = (id: string, cityId: string) =>
         activeCategory = "All";
       }
 
+      const cityPrices = new Set<string>(
+        guideRecommendations
+          .filter((item) => item.cityId === activeCity
+            && (activeTier === "all" || item.tier === activeTier))
+          .map((item) => item.price),
+      );
+      if (activePrice !== "All" && !cityPrices.has(activePrice)) {
+        activePrice = "All";
+      }
+
       tierButtons.forEach((button) => {
         button.setAttribute("aria-pressed", String(button.dataset.tierButton === activeTier));
       });
       cityButtons.forEach((button) => {
-        button.setAttribute("aria-pressed", String(button.dataset.cityButton === activeCity));
+        const cityId = button.dataset.cityButton ?? "";
+        const countValue = cityCounts.get(cityId) ?? 0;
+        button.hidden = countValue === 0;
+        button.setAttribute("aria-pressed", String(cityId === activeCity));
         const count = button.querySelector<HTMLElement>("[data-city-count]");
         if (count) {
-          count.textContent = String(guideRecommendations.filter(
-            (item) => item.cityId === button.dataset.cityButton
-              && (activeTier === "all" || item.tier === activeTier),
-          ).length);
+          count.textContent = String(countValue);
         }
       });
       categoryButtons.forEach((button) => {
         const category = button.dataset.categoryButton ?? "All";
         button.hidden = category !== "All" && !cityCategories.has(category);
         button.setAttribute("aria-pressed", String(category === activeCategory));
+      });
+      priceButtons.forEach((button) => {
+        const price = button.dataset.priceButton ?? "All";
+        button.hidden = price !== "All" && !cityPrices.has(price);
+        button.setAttribute("aria-pressed", String(price === activePrice));
       });
 
       const city = cities.find((item) => item.id === activeCity) ?? defaultCityData;
@@ -289,7 +341,8 @@ const cityItemNumber = (id: string, cityId: string) =>
       cards.forEach((card) => {
         const visible = card.dataset.city === activeCity
           && (activeTier === "all" || card.dataset.tier === activeTier)
-          && (activeCategory === "All" || card.dataset.category === activeCategory);
+          && (activeCategory === "All" || card.dataset.category === activeCategory)
+          && (activePrice === "All" || card.dataset.price === activePrice);
         card.hidden = !visible;
         if (visible && card.dataset.recommendation) visibleIds.push(card.dataset.recommendation);
       });
@@ -299,7 +352,8 @@ const cityItemNumber = (id: string, cityId: string) =>
         if (!marker) return;
         const visible = item.cityId === activeCity
           && (activeTier === "all" || item.tier === activeTier)
-          && (activeCategory === "All" || item.category === activeCategory);
+          && (activeCategory === "All" || item.category === activeCategory)
+          && (activePrice === "All" || item.price === activePrice);
         if (visible && !map.hasLayer(marker)) marker.addTo(map);
         if (!visible && map.hasLayer(marker)) marker.removeFrom(map);
       });
@@ -331,6 +385,13 @@ const cityItemNumber = (id: string, cityId: string) =>
     categoryButtons.forEach((button) => {
       button.addEventListener("click", () => {
         activeCategory = button.dataset.categoryButton ?? "All";
+        updateGuide(true);
+      });
+    });
+
+    priceButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        activePrice = (button.dataset.priceButton ?? "All") as RecommendationPrice | "All";
         updateGuide(true);
       });
     });
