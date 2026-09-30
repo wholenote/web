@@ -1,0 +1,35 @@
+---
+import FoodGuide from "../components/FoodGuide.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import "../styles/global.css";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta
+      name="description"
+      content="Brian Wang's guide to favorite restaurants in Austin, Houston, and Las Vegas."
+    />
+    <meta name="theme-color" content="#0c0b20" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Brian Wang’s Food Guide</title>
+  </head>
+  <body class="guide-page">
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+
+    <SiteHeader active="food" />
+
+    <main>
+      <FoodGuide />
+    </main>
+
+    <footer class="guide-footer section-shell">
+      <span>BRIAN’S FOOD GUIDE · CITY EDITION</span>
+      <span>More cities later. Good meals now.</span>
+    </footer>
+  </body>
+</html>

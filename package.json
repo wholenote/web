@@ -1,0 +1,24 @@
+{
+  "name": "brian-field-notes",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "test": "vitest run",
+    "recommendations:export": "node scripts/export-recommendations.mjs"
+  },
+  "dependencies": {
+    "astro": "^7.3.5",
+    "leaflet": "^1.9.4"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@types/leaflet": "^1.9.20",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

@@ -1,0 +1,19 @@
+---
+interface Props {
+  active: "resume" | "food";
+}
+
+const { active } = Astro.props;
+---
+
+<header class="site-header section-shell">
+  <a class="site-name" href="/" aria-label="Brian Wang home" lang="zh-Hans">王</a>
+  <nav class="site-tabs" aria-label="Primary navigation">
+    <a class="site-tab" href="/resume/" aria-current={active === "resume" ? "page" : undefined}>
+      About
+    </a>
+    <a class="site-tab" href="/" aria-current={active === "food" ? "page" : undefined}>
+      Food
+    </a>
+  </nav>
+</header>
