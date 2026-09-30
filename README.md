@@ -34,46 +34,6 @@ npm run preview
 
 The interactive map uses Leaflet and OpenStreetMap tiles with visible attribution. The card list retains all recommendation details for accessibility. Austin, Houston, and Las Vegas are configured, and the data structure supports adding more cities later.
 
-## Update recommendations from S3 without redeploying
-
-The site can fetch a JSON copy of the recommendations in the browser. The built-in TypeScript list remains the fallback if S3 is unavailable or the JSON is invalid.
-
-1. Export the current data:
-
-   ```bash
-   npm run recommendations:export
-   ```
-
-2. Upload the generated `recommendations.json` with a short cache lifetime:
-
-   ```bash
-   aws s3 cp recommendations.json s3://YOUR_BUCKET/recommendations.json \
-     --content-type application/json \
-     --cache-control "public,max-age=60"
-   ```
-
-3. Add the stable object URL to the hosting environment and deploy once:
-
-   ```text
-   PUBLIC_RECOMMENDATIONS_URL=https://YOUR_BUCKET.s3.YOUR_REGION.amazonaws.com/recommendations.json
-   ```
-
-After that one deployment, edit `src/data/recommendations.ts`, run the export command, and upload the generated JSON again. The website requests it on each page load, so restaurant changes do not require another site build. Keep the S3 bucket private for writes; the JSON object itself must be publicly readable, or served publicly through CloudFront.
-
-If S3 is on a different origin than the website, add a bucket CORS rule like this, replacing the domain with the production site:
-
-```json
-[
-  {
-    "AllowedOrigins": ["https://your-domain.com"],
-    "AllowedMethods": ["GET"],
-    "AllowedHeaders": ["*"]
-  }
-]
-```
-
-Copy `.env.example` to `.env` for local testing. Do not use a presigned S3 URL for this setting because presigned URLs expire; use a stable public S3 or CloudFront URL.
-
 ## Deploy after localhost approval
 
 The site builds to static files in `dist` and does not need secrets, a database, or a map API key.

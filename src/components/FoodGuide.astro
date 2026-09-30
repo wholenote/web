@@ -3,7 +3,6 @@ import { categories, cities, recommendations, tiers } from "../data/recommendati
 
 const defaultCity = cities[0]?.id ?? "";
 const defaultTier = tiers[0]?.id ?? "all";
-const recommendationsUrl = import.meta.env.PUBLIC_RECOMMENDATIONS_URL?.trim() ?? "";
 const cityCount = (cityId: string) =>
   recommendations.filter((item) => item.cityId === cityId).length;
 const cityItemNumber = (id: string, cityId: string) =>
@@ -18,7 +17,6 @@ const cityItemNumber = (id: string, cityId: string) =>
   data-food-guide
   data-default-city={defaultCity}
   data-default-tier={defaultTier}
-  data-recommendations-url={recommendationsUrl}
 >
   <header class="guide-heading reveal">
     <h1>Restaurant Recommendations</h1>
@@ -145,14 +143,14 @@ const cityItemNumber = (id: string, cityId: string) =>
   </div>
 
   <p class="sample-note reveal">
-    Restaurant details might not fully up to date :&#41;
+    Restaurant details might not fully up to date because they're added manually.
   </p>
 </section>
 
 <script>
   import L from "leaflet";
   import "leaflet/dist/leaflet.css";
-  import { categories, categoryIcons, cities, recommendations, tiers } from "../data/recommendations";
+  import { categoryIcons, cities, recommendations, tiers } from "../data/recommendations";
   import type { Recommendation, RecommendationTier } from "../data/recommendations";
 
   const guide = document.querySelector<HTMLElement>("[data-food-guide]");
@@ -160,7 +158,7 @@ const cityItemNumber = (id: string, cityId: string) =>
   const defaultCityData = cities[0];
 
   if (guide && mapElement && defaultCityData) {
-    let guideRecommendations: Recommendation[] = [...recommendations];
+    const guideRecommendations: Recommendation[] = recommendations;
     let activeCity = guide.dataset.defaultCity ?? defaultCityData.id;
     let activeTier = (guide.dataset.defaultTier ?? "all") as RecommendationTier | "all";
     let activeCategory = "All";
@@ -169,8 +167,7 @@ const cityItemNumber = (id: string, cityId: string) =>
     const cityButtons = Array.from(guide.querySelectorAll<HTMLButtonElement>("[data-city-button]"));
     const tierButtons = Array.from(guide.querySelectorAll<HTMLButtonElement>("[data-tier-button]"));
     const categoryButtons = Array.from(guide.querySelectorAll<HTMLButtonElement>("[data-category-button]"));
-    let cards = Array.from(guide.querySelectorAll<HTMLElement>("[data-recommendation]"));
-    const recommendationList = guide.querySelector<HTMLElement>("[data-recommendation-list]");
+    const cards = Array.from(guide.querySelectorAll<HTMLElement>("[data-recommendation]"));
     const resultCount = guide.querySelector<HTMLElement>("[data-result-count]");
     const emptyState = guide.querySelector<HTMLElement>("[data-empty-state]");
     const mapCity = guide.querySelector<HTMLElement>("[data-map-city]");
@@ -191,13 +188,7 @@ const cityItemNumber = (id: string, cityId: string) =>
 
     const markers = new Map<string, L.Marker>();
 
-    const itemNumber = (item: Recommendation) => guideRecommendations
-      .filter((candidate) => candidate.cityId === item.cityId)
-      .findIndex((candidate) => candidate.id === item.id) + 1;
-
     const addMarker = (item: Recommendation) => {
-      const number = itemNumber(item);
-      if (number < 1) return;
       const icon = L.divIcon({
         className: "restaurant-marker-shell",
         html: `<span class="restaurant-marker"><span class="marker-category-icon" aria-hidden="true">${categoryIcons[item.category]}</span>${item.tier === "favorite" ? '<span class="marker-star" aria-hidden="true">★</span>' : ""}</span>`,
@@ -214,12 +205,6 @@ const cityItemNumber = (id: string, cityId: string) =>
       }).bindTooltip(item.name, { direction: "top", offset: [0, -16] });
       marker.on("click", () => selectRecommendation(item.id, true));
       markers.set(item.id, marker);
-    };
-
-    const rebuildMarkers = () => {
-      markers.forEach((marker) => marker.remove());
-      markers.clear();
-      guideRecommendations.forEach(addMarker);
     };
 
     guideRecommendations.forEach(addMarker);
@@ -262,89 +247,6 @@ const cityItemNumber = (id: string, cityId: string) =>
       selectButton?.addEventListener("click", activate);
       selectButton?.addEventListener("focus", activate);
       card.addEventListener("pointerenter", activate);
-    };
-
-    const makeTextElement = (tag: string, className: string, text: string) => {
-      const element = document.createElement(tag);
-      element.className = className;
-      element.textContent = text;
-      return element;
-    };
-
-    const safeExternalUrl = (value: string | undefined) => {
-      if (!value) return null;
-      try {
-        const url = new URL(value);
-        return ["http:", "https:"].includes(url.protocol) ? url.href : null;
-      } catch {
-        return null;
-      }
-    };
-
-    const createCard = (item: Recommendation) => {
-      const article = document.createElement("article");
-      article.className = "recommendation-card";
-      article.dataset.recommendation = item.id;
-      article.dataset.city = item.cityId;
-      article.dataset.category = item.category;
-      article.dataset.tier = item.tier;
-
-      if (item.tier === "favorite") {
-        const star = makeTextElement("span", "card-star", "★");
-        star.setAttribute("aria-label", "Brian’s favorite");
-        star.title = "Brian’s favorite";
-        article.append(star);
-      }
-
-      const button = document.createElement("button");
-      button.className = "card-select";
-      button.type = "button";
-      button.setAttribute("aria-label", `Show ${item.name} on the map`);
-      button.append(makeTextElement("span", "card-index", String(itemNumber(item)).padStart(2, "0")));
-
-      const copy = document.createElement("span");
-      copy.className = "card-copy";
-      const meta = document.createElement("span");
-      meta.className = "card-meta";
-      [item.category, item.neighborhood, item.price].forEach((value) => {
-        meta.append(makeTextElement("span", "", value));
-      });
-      copy.append(meta);
-      copy.append(makeTextElement("strong", "card-name", item.name));
-      copy.append(makeTextElement("span", "card-note", item.note));
-      if (item.order) {
-        const order = makeTextElement("span", "card-order", item.order);
-        order.prepend(makeTextElement("i", "", "Order this"));
-        copy.append(order);
-      }
-      button.append(copy);
-      const arrow = makeTextElement("span", "card-arrow", "↗");
-      arrow.setAttribute("aria-hidden", "true");
-      button.append(arrow);
-      article.append(button);
-
-      const directionsUrl = safeExternalUrl(item.directionsUrl);
-      if (directionsUrl) {
-        const link = document.createElement("a");
-        link.className = "directions-link";
-        link.href = directionsUrl;
-        link.target = "_blank";
-        link.rel = "noreferrer";
-        link.append(document.createTextNode("Directions "));
-        const linkArrow = makeTextElement("span", "", "↗");
-        linkArrow.setAttribute("aria-hidden", "true");
-        link.append(linkArrow);
-        article.append(link);
-      }
-
-      return article;
-    };
-
-    const renderCards = () => {
-      if (!recommendationList) return;
-      recommendationList.replaceChildren(...guideRecommendations.map(createCard));
-      cards = Array.from(recommendationList.querySelectorAll<HTMLElement>("[data-recommendation]"));
-      cards.forEach(bindCard);
     };
 
     const updateGuide = (refitMap = false) => {
@@ -412,61 +314,6 @@ const cityItemNumber = (id: string, cityId: string) =>
       if (refitMap) fitCity();
     };
 
-    const isRemoteRecommendation = (value: unknown): value is Recommendation => {
-      if (!value || typeof value !== "object") return false;
-      const item = value as Record<string, unknown>;
-      const coordinates = item.coordinates as Record<string, unknown> | undefined;
-      return typeof item.id === "string"
-        && typeof item.cityId === "string"
-        && cities.some((city) => city.id === item.cityId)
-        && typeof item.name === "string"
-        && item.category !== "All"
-        && categories.includes(item.category as (typeof categories)[number])
-        && typeof item.neighborhood === "string"
-        && ["$", "$$", "$$$", "$$$$"].includes(String(item.price))
-        && typeof item.note === "string"
-        && typeof item.order === "string"
-        && item.tier !== "all"
-        && tiers.some((tier) => tier.id === item.tier)
-        && typeof coordinates?.lat === "number"
-        && Number.isFinite(coordinates.lat)
-        && coordinates.lat >= -90
-        && coordinates.lat <= 90
-        && typeof coordinates?.lng === "number"
-        && Number.isFinite(coordinates.lng)
-        && coordinates.lng >= -180
-        && coordinates.lng <= 180
-        && (item.directionsUrl === undefined || typeof item.directionsUrl === "string");
-    };
-
-    const loadRemoteRecommendations = async () => {
-      const url = guide.dataset.recommendationsUrl;
-      if (!url) return;
-      try {
-        const response = await fetch(url, { cache: "no-cache" });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const payload: unknown = await response.json();
-        const items = Array.isArray(payload)
-          ? payload
-          : (payload && typeof payload === "object"
-            ? (payload as { recommendations?: unknown }).recommendations
-            : null);
-        if (!Array.isArray(items) || !items.every(isRemoteRecommendation)) {
-          throw new Error("The JSON does not match the recommendation schema");
-        }
-        const ids = new Set(items.map((item) => item.id));
-        if (ids.size !== items.length) throw new Error("Recommendation ids must be unique");
-
-        guideRecommendations = items;
-        activeRecommendation = "";
-        renderCards();
-        rebuildMarkers();
-        updateGuide(true);
-      } catch (error) {
-        console.warn("Could not load remote recommendations; using the built-in list.", error);
-      }
-    };
-
     tierButtons.forEach((button) => {
       button.addEventListener("click", () => {
         activeTier = (button.dataset.tierButton ?? activeTier) as RecommendationTier | "all";
@@ -492,6 +339,5 @@ const cityItemNumber = (id: string, cityId: string) =>
 
     updateGuide(true);
     window.setTimeout(() => map.invalidateSize(), 0);
-    void loadRemoteRecommendations();
   }
 </script>

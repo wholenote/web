@@ -8,8 +8,7 @@
     "build": "astro check && astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "test": "vitest run",
-    "recommendations:export": "node scripts/export-recommendations.mjs"
+    "test": "vitest run"
   },
   "dependencies": {
     "astro": "^7.3.5",
