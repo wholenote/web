@@ -1,6 +1,6 @@
-# Brian Wang’s Food Guide
+# Brian’s Personal Website
 
-A focused, interactive food guide for Brian's Austin, Houston, and Las Vegas recommendations. Built with Astro and TypeScript as a static site suitable for Cloudflare Pages.
+Brian's personal website, built with Astro and TypeScript as a static site suitable for Cloudflare Pages. It currently includes an interactive collection of restaurant recommendations and can expand to include other projects and interests over time.
 
 ## Run locally first
 
@@ -24,8 +24,9 @@ npm run preview
 
 `npm run preview` serves the production build locally, normally at `http://localhost:4321`.
 
-## Edit the guide
+## Edit the site
 
+- Edit the pages and components in `src` to add or update sections of the website.
 - Edit `src/data/recommendations.ts` for cities, restaurant recommendations, personal notes, suggested orders, and tiers.
 - Set each restaurant's `tier` to `"recommended"` or `"favorite"`. The combined All list is shown by default.
 - Every recommendation uses real `{ lat, lng }` coordinates to place it on the Austin-area map.
