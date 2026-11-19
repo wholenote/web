@@ -1,0 +1,10 @@
+---
+import PhotoGame from "../components/PhotoGame.astro";
+import SiteLayout from "../layouts/SiteLayout.astro";
+
+// Temporarily unpublished. Keep the photo game below for when Photos is ready.
+return Astro.redirect("/food/", 302);
+---
+<SiteLayout active="photos" title="The daily photo game — Brian" description="Five photos, five country guesses, one daily score. A new photo game every day.">
+  <PhotoGame />
+</SiteLayout>

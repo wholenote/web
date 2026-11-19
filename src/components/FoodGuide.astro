@@ -1,173 +1,118 @@
 ---
 import { categories, cities, prices, recommendations, tiers } from "../data/recommendations";
-
+const orderedRecommendations = [...recommendations].sort(
+  (a, b) => Number(b.tier === "favorite") - Number(a.tier === "favorite"),
+);
 const defaultCity = cities[0]?.id ?? "";
 const defaultTier = tiers[0]?.id ?? "all";
-const cityCount = (cityId: string) =>
-  recommendations.filter((item) => item.cityId === cityId).length;
+const cityCount = (cityId: string) => recommendations.filter(item => item.cityId === cityId).length;
 const cityItemNumber = (id: string, cityId: string) =>
-  recommendations
-    .filter((item) => item.cityId === cityId)
-    .findIndex((item) => item.id === id) + 1;
+  orderedRecommendations.filter(item => item.cityId === cityId).findIndex(item => item.id === id) + 1;
 ---
 
-<section
-  class="food-guide section-shell"
-  id="field-guide"
-  data-food-guide
-  data-default-city={defaultCity}
-  data-default-tier={defaultTier}
->
-  <header class="guide-heading reveal">
-    <h1>Restaurant Recommendations</h1>
-    <p>My personal picks, no guarantees ◡̈</p>
+<section class="food-guide section-shell" id="field-guide" data-food-guide data-default-city={defaultCity} data-default-tier={defaultTier}>
+  <header class="page-heading guide-heading">
+    <div>
+      <p class="eyebrow">01 / A food guide</p>
+      <h1>A few <em>good places.</em></h1>
+    </div>
+    <p>My restaurant recommendations.</p>
   </header>
 
-  <div class="guide-toolbar reveal" aria-label="Food guide controls">
-    <div class="control-group tier-control">
-      <span class="control-label">List</span>
-      <div class="chip-row" role="group" aria-label="Choose a recommendation list">
-        {tiers.map((tier, index) => (
-          <button
-            class="filter-chip tier-chip"
-            type="button"
-            data-tier-button={tier.id}
-            aria-pressed={index === 0 ? "true" : "false"}
-          >
-            {tier.label}
-          </button>
-        ))}
-      </div>
+  <div class="guide-toolbar" aria-label="Food guide controls">
+    <div class="city-select-wrap">
+      <label class="control-label" for="guide-city">Exploring</label>
+      <select id="guide-city" data-city-select>
+        {cities.map(city => <option value={city.id}>{city.shortName}</option>)}
+      </select>
     </div>
-
-    <div class="control-group price-control">
-      <span class="control-label">Price</span>
-      <div class="chip-row" role="group" aria-label="Filter by price">
-        {prices.map((price, index) => (
-          <button
-            class="filter-chip price-chip"
-            type="button"
-            data-price-button={price}
-            aria-pressed={index === 0 ? "true" : "false"}
-          >
-            {price}
-          </button>
-        ))}
-      </div>
-    </div>
-
-    {cities.length > 1 && (
-      <div class="control-group city-control">
-        <span class="control-label">City</span>
-        <div class="chip-row" role="group" aria-label="Choose a city">
-          {cities.map((city, index) => (
-            <button
-              class="filter-chip city-chip"
-              type="button"
-              data-city-button={city.id}
-              aria-pressed={index === 0 ? "true" : "false"}
-            >
-              <span>{city.shortName}</span>
-              <span class="chip-count" data-city-count={city.id}>{cityCount(city.id)}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    )}
-
-    <div class="control-group category-control">
-      <span class="control-label">Craving</span>
-      <div class="chip-row" role="group" aria-label="Filter by category">
-        {categories.map((category, index) => (
-          <button
-            class="filter-chip category-chip"
-            type="button"
-            data-category-button={category}
-            aria-pressed={index === 0 ? "true" : "false"}
-          >
-            {category}
-          </button>
-        ))}
-      </div>
+    <div class="chip-row tier-control" role="group" aria-label="Choose a recommendation list">
+      {tiers.map((tier, index) => (
+        <button class="filter-chip tier-chip" type="button" data-tier-button={tier.id} aria-pressed={index === 0}>
+          {tier.id === "favorite" && <span aria-hidden="true">★</span>}{tier.label}
+        </button>
+      ))}
     </div>
   </div>
 
-  <div class="guide-layout reveal">
-    <div class="map-card">
-      <div class="map-chrome" aria-hidden="true">
-        <span class="map-light"></span>
-        <span class="map-light"></span>
-        <span class="map-light"></span>
-        <span class="map-status">LIVE FIELD NOTES</span>
+  <details class="filter-drawer">
+    <summary><span>Filters</span><span class="filter-summary" data-filter-summary>Any cuisine · Any price</span><span class="disclosure-mark" aria-hidden="true">+</span></summary>
+    <div class="filter-drawer-body">
+      <div class="control-group">
+        <span class="control-label">Price</span>
+        <div class="chip-row" role="group" aria-label="Filter by price">
+          {prices.map((price, index) => <button class="filter-chip" type="button" data-price-button={price} aria-pressed={index === 0}>{price}</button>)}
+        </div>
       </div>
-
-      <div class="map-stage">
-        <div class="real-map" data-real-map aria-label={`Map of ${cities[0]?.shortName} restaurant recommendations`}></div>
-        <div class="map-place-label">
-          <strong data-map-city>{cities[0]?.name}</strong>
+      <div class="control-group">
+        <span class="control-label">Craving</span>
+        <div class="chip-row" role="group" aria-label="Filter by category">
+          {categories.map((category, index) => <button class="filter-chip" type="button" data-category-button={category} aria-pressed={index === 0}>{category}</button>)}
         </div>
       </div>
     </div>
+  </details>
 
-    <div class="recommendation-panel">
-      <div class="panel-heading">
-        <span><strong data-result-count>{cityCount(defaultCity)}</strong> places</span>
-        <span class="sample-flag" data-edition-label>Austin edition</span>
+  <details class="restaurant-randomizer" data-randomizer>
+    <summary>
+      <span class="draw-mark" aria-hidden="true">✦</span>
+      <span><strong>Random pick</strong><small>Choose a restaurant from this city.</small></span>
+      <span class="disclosure-mark" aria-hidden="true">+</span>
+    </summary>
+    <div class="randomizer-body">
+      <p class="randomizer-copy">Choose from every restaurant in <strong data-randomizer-city>{cities[0]?.shortName}</strong>, regardless of filters.</p>
+      <div class="slot-machine">
+        <div class="slot-window"><span>Cuisine</span><strong data-slot-category>Any cuisine</strong></div>
+        <div class="slot-window"><span>Price</span><strong data-slot-price>Any price</strong></div>
+        <div class="slot-window slot-window-name"><span>Restaurant</span><strong data-slot-restaurant>No selection yet</strong></div>
+        <button class="spin-button" type="button" data-spin-button data-sound="none"><span>Pick a restaurant</span><span aria-hidden="true">↗</span></button>
       </div>
+      <p class="spin-status" data-spin-status aria-live="polite">Includes all restaurants in this city.</p>
+    </div>
+  </details>
 
-      <div class="recommendation-list" data-recommendation-list aria-live="polite">
-        {recommendations.map((item) => (
-          <article
-            class="recommendation-card"
-            data-recommendation={item.id}
-            data-city={item.cityId}
-            data-category={item.category}
-            data-tier={item.tier}
-            data-price={item.price}
-            hidden={item.cityId !== defaultCity}
-          >
-            {item.tier === "favorite" && (
-              <span class="card-star" aria-label="Brian’s favorite" title="Brian’s favorite">★</span>
-            )}
-            <button class="card-select" type="button" aria-label={`Show ${item.name} on the map`}>
+  <div class="results-bar">
+    <p role="status"><strong data-result-count>{cityCount(defaultCity)}</strong> places <span class="result-separator">/</span> <span data-edition-label>Austin · All</span></p>
+    <div class="view-switch" role="group" aria-label="Results view">
+      <button type="button" data-guide-view="list" aria-pressed="true">List</button>
+      <button type="button" data-guide-view="map" aria-pressed="false">Map</button>
+    </div>
+    <span class="desktop-map-hint">Select a place to find it on the map <span aria-hidden="true">↗</span></span>
+  </div>
+  <div class="guide-layout">
+    <div class="recommendation-panel">
+      <div class="recommendation-list" data-recommendation-list aria-label="Restaurant recommendations" tabindex="0">
+        {orderedRecommendations.map(item => (
+          <article class="recommendation-card" data-recommendation={item.id} data-city={item.cityId} data-category={item.category} data-tier={item.tier} data-price={item.price} hidden={item.cityId !== defaultCity}>
+            {item.tier === "favorite" && <span class="card-star" aria-label="Brian’s favorite" title="Brian’s favorite">★</span>}
+            <button class="card-select" type="button" aria-pressed="false" aria-label={`Select ${item.name}`}>
               <span class="card-index">{String(cityItemNumber(item.id, item.cityId)).padStart(2, "0")}</span>
               <span class="card-copy">
-                <span class="card-meta">
-                  <span>{item.category}</span>
-                  <span>{item.neighborhood}</span>
-                  <span>{item.price}</span>
-                </span>
+                <span class="card-meta"><span>{item.category}</span><span>{item.price}</span></span>
                 <strong class="card-name">{item.name}</strong>
-                <span class="card-note">{item.note}</span>
-                {item.order && <span class="card-order"><i>Order this</i>{item.order}</span>}
+                <span class="card-neighborhood">{item.neighborhood}</span>
+                {item.order && <span class="card-order"><i>Order:</i> {item.order}</span>}
               </span>
-              <span class="card-arrow" aria-hidden="true">↗</span>
             </button>
-            {item.directionsUrl && (
-              <a class="directions-link" href={item.directionsUrl} target="_blank" rel="noreferrer">
-                Directions <span aria-hidden="true">↗</span>
-              </a>
-            )}
+            {item.directionsUrl && <a class="directions-link" href={item.directionsUrl} target="_blank" rel="noreferrer">Directions <span aria-hidden="true">↗</span></a>}
           </article>
         ))}
       </div>
-
-      <div class="empty-state" data-empty-state hidden>
-        <span aria-hidden="true">◇</span>
-        <p>No places match those filters yet.</p>
-      </div>
+      <div class="empty-state" data-empty-state hidden><span aria-hidden="true">◇</span><p>No places match those filters yet.</p></div>
+    </div>
+    <div class="map-card" id="restaurant-map">
+      <div class="map-chrome"><span class="map-light" aria-hidden="true"></span><span data-map-city>{cities[0]?.name}</span></div>
+      <div class="map-stage"><div class="real-map" data-real-map aria-label={`Map of ${cities[0]?.shortName} restaurant recommendations`}></div></div>
     </div>
   </div>
-
-  <p class="sample-note reveal">
-    Restaurant details might not fully up to date because they're added manually.
-  </p>
+  <p class="sample-note">Check hours and menus with the restaurant before visiting.</p>
 </section>
 
 <script>
   import L from "leaflet";
+  import { prefersReducedMotion, scrollBehavior } from "../lib/motion";
   import "leaflet/dist/leaflet.css";
-  import { categoryIcons, cities, recommendations, tiers } from "../data/recommendations";
+  import { restaurantFlagIcons, restaurantCuisineCountries, cities, recommendations, tiers } from "../data/recommendations";
   import type {
     Recommendation,
     RecommendationPrice,
@@ -186,7 +131,8 @@ const cityItemNumber = (id: string, cityId: string) =>
     let activePrice: RecommendationPrice | "All" = "All";
     let activeRecommendation = "";
 
-    const cityButtons = Array.from(guide.querySelectorAll<HTMLButtonElement>("[data-city-button]"));
+    const citySelect = guide.querySelector<HTMLSelectElement>("[data-city-select]");
+    const filterSummary = guide.querySelector<HTMLElement>("[data-filter-summary]");
     const tierButtons = Array.from(guide.querySelectorAll<HTMLButtonElement>("[data-tier-button]"));
     const categoryButtons = Array.from(guide.querySelectorAll<HTMLButtonElement>("[data-category-button]"));
     const priceButtons = Array.from(guide.querySelectorAll<HTMLButtonElement>("[data-price-button]"));
@@ -195,11 +141,41 @@ const cityItemNumber = (id: string, cityId: string) =>
     const emptyState = guide.querySelector<HTMLElement>("[data-empty-state]");
     const mapCity = guide.querySelector<HTMLElement>("[data-map-city]");
     const editionLabel = guide.querySelector<HTMLElement>("[data-edition-label]");
+    const randomizer = guide.querySelector<HTMLElement>("[data-randomizer]");
+    const randomizerCity = guide.querySelector<HTMLElement>("[data-randomizer-city]");
+    const slotCategory = guide.querySelector<HTMLElement>("[data-slot-category]");
+    const slotPrice = guide.querySelector<HTMLElement>("[data-slot-price]");
+    const slotRestaurant = guide.querySelector<HTMLElement>("[data-slot-restaurant]");
+    const spinButton = guide.querySelector<HTMLButtonElement>("[data-spin-button]");
+    const spinStatus = guide.querySelector<HTMLElement>("[data-spin-status]");
+    let renderedRandomizerCity = activeCity;
+    let lastRandomRecommendation = "";
+    let finishPendingDraw: (() => void) | null = null;
+    const drawTimers: number[] = [];
+    const cancelDraw = () => {
+      drawTimers.splice(0).forEach(window.clearTimeout);
+      finishPendingDraw = null;
+      randomizer?.classList.remove("is-spinning");
+      if (spinButton) spinButton.disabled = false;
+    };
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    motionQuery.addEventListener("change", () => {
+      if (motionQuery.matches) {
+        map.stop();
+        finishPendingDraw?.();
+      }
+    });
+    window.addEventListener("pagehide", cancelDraw);
 
     const map = L.map(mapElement, {
       attributionControl: true,
       zoomControl: false,
       zoomSnap: 1,
+      zoomAnimation: false,
+      fadeAnimation: false,
+      markerZoomAnimation: false,
+      inertia: false,
+      scrollWheelZoom: false,
     }).setView([defaultCityData.center.lat, defaultCityData.center.lng], defaultCityData.zoom);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -209,14 +185,25 @@ const cityItemNumber = (id: string, cityId: string) =>
     }).addTo(map);
     L.control.zoom({ position: "bottomright" }).addTo(map);
 
+    guide.dataset.enhanced = "true";
+    guide.dataset.view = "list";
+    const viewButtons = Array.from(guide.querySelectorAll<HTMLButtonElement>("[data-guide-view]"));
+    const setView = (view: string) => {
+      guide.dataset.view = view;
+      viewButtons.forEach(button => button.setAttribute("aria-pressed", String(button.dataset.guideView === view)));
+      map.invalidateSize({ animate: false });
+      if (view === "map") fitCity();
+    };
+    viewButtons.forEach(button => button.addEventListener("click", () => setView(button.dataset.guideView ?? "list")));
     const markers = new Map<string, L.Marker>();
 
     const addMarker = (item: Recommendation) => {
+      const markerWidth = 34 + (restaurantCuisineCountries(item).length - 1) * 25;
       const icon = L.divIcon({
         className: "restaurant-marker-shell",
-        html: `<span class="restaurant-marker"><span class="marker-category-icon" aria-hidden="true">${categoryIcons[item.category]}</span>${item.tier === "favorite" ? '<span class="marker-star" aria-hidden="true">★</span>' : ""}</span>`,
-        iconSize: [34, 34],
-        iconAnchor: [17, 17],
+        html: `<span class="restaurant-marker"><span class="marker-category-icon" aria-hidden="true">${restaurantFlagIcons(item)}</span></span>`,
+        iconSize: [markerWidth, 34],
+        iconAnchor: [markerWidth / 2, 17],
         tooltipAnchor: [0, -20],
       });
       const marker = L.marker([item.coordinates.lat, item.coordinates.lng], {
@@ -226,13 +213,19 @@ const cityItemNumber = (id: string, cityId: string) =>
         alt: `${item.name}, ${item.category} in ${item.neighborhood}`,
         riseOnHover: true,
       }).bindTooltip(item.name, { direction: "top", offset: [0, -16] });
-      marker.on("click", () => selectRecommendation(item.id, true));
+      marker.on("click", () => {
+        setView("list");
+        selectRecommendation(item.id, true);
+        guide.querySelector<HTMLButtonElement>(`[data-recommendation="${item.id}"] .card-select`)?.focus({ preventScroll: true });
+      });
       markers.set(item.id, marker);
     };
 
     guideRecommendations.forEach(addMarker);
 
     const fitCity = () => {
+      // A mobile map hidden behind the List tab has no usable bounds yet.
+      if (!mapElement.clientWidth || !mapElement.clientHeight) return;
       const points = guideRecommendations
         .filter((item) => item.cityId === activeCity
           && (activeTier === "all" || item.tier === activeTier)
@@ -240,12 +233,12 @@ const cityItemNumber = (id: string, cityId: string) =>
           && (activePrice === "All" || item.price === activePrice))
         .map((item) => [item.coordinates.lat, item.coordinates.lng] as L.LatLngTuple);
       if (points.length > 1) {
-        map.fitBounds(L.latLngBounds(points), { padding: [42, 42], maxZoom: 12 });
+        map.fitBounds(L.latLngBounds(points), { padding: [42, 42], maxZoom: 12, animate: !prefersReducedMotion() });
       } else if (points.length === 1) {
-        map.setView(points[0]!, 14);
+        map.setView(points[0]!, 14, { animate: !prefersReducedMotion() });
       } else {
         const city = cities.find((item) => item.id === activeCity) ?? defaultCityData;
-        map.setView([city.center.lat, city.center.lng], city.zoom);
+        map.setView([city.center.lat, city.center.lng], city.zoom, { animate: !prefersReducedMotion() });
       }
     };
 
@@ -259,18 +252,30 @@ const cityItemNumber = (id: string, cityId: string) =>
       cards.forEach((card) => {
         const isActive = card.dataset.recommendation === id && !card.hidden;
         card.classList.toggle("is-active", isActive);
+        card.querySelector(".card-select")?.setAttribute("aria-pressed", String(isActive));
         if (isActive && scrollCard) {
-          card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+          card.scrollIntoView({ behavior: scrollBehavior(), block: "nearest", inline: "nearest" });
         }
       });
     };
 
     const bindCard = (card: HTMLElement) => {
       const selectButton = card.querySelector<HTMLButtonElement>(".card-select");
-      const activate = () => selectRecommendation(card.dataset.recommendation ?? "");
-      selectButton?.addEventListener("click", activate);
-      selectButton?.addEventListener("focus", activate);
-      card.addEventListener("pointerenter", activate);
+      selectButton?.addEventListener("click", () => {
+        const id = card.dataset.recommendation ?? "";
+        selectRecommendation(id);
+        const item = guideRecommendations.find(item => item.id === id);
+        if (item) {
+          map.setView([item.coordinates.lat, item.coordinates.lng], 14, { animate: !prefersReducedMotion() });
+          markers.get(id)?.openTooltip();
+        }
+      });
+    };
+
+    const showSlotResult = (item?: Recommendation) => {
+      if (slotCategory) slotCategory.textContent = item?.category ?? "Any cuisine";
+      if (slotPrice) slotPrice.textContent = item?.price ?? "Any price";
+      if (slotRestaurant) slotRestaurant.textContent = item?.name ?? "No selection yet";
     };
 
     const updateGuide = (refitMap = false) => {
@@ -287,39 +292,46 @@ const cityItemNumber = (id: string, cityId: string) =>
         activeCity = cities.find((city) => (cityCounts.get(city.id) ?? 0) > 0)?.id ?? activeCity;
       }
 
-      const cityCategories = new Set<string>(
-        guideRecommendations
-          .filter((item) => item.cityId === activeCity
-            && (activeTier === "all" || item.tier === activeTier))
-          .map((item) => item.category),
+      const tierCityItems = guideRecommendations.filter(
+        (item) => item.cityId === activeCity
+          && (activeTier === "all" || item.tier === activeTier),
       );
-      if (activeCategory !== "All" && !cityCategories.has(activeCategory)) {
+      const baseCategories = new Set<string>(tierCityItems.map((item) => item.category));
+      if (activeCategory !== "All" && !baseCategories.has(activeCategory)) {
         activeCategory = "All";
       }
 
-      const cityPrices = new Set<string>(
-        guideRecommendations
-          .filter((item) => item.cityId === activeCity
-            && (activeTier === "all" || item.tier === activeTier))
+      let cityPrices = new Set<string>(
+        tierCityItems
+          .filter((item) => activeCategory === "All" || item.category === activeCategory)
           .map((item) => item.price),
       );
       if (activePrice !== "All" && !cityPrices.has(activePrice)) {
         activePrice = "All";
       }
 
+      const cityCategories = new Set<string>(
+        tierCityItems
+          .filter((item) => activePrice === "All" || item.price === activePrice)
+          .map((item) => item.category),
+      );
+      if (activeCategory !== "All" && !cityCategories.has(activeCategory)) {
+        activeCategory = "All";
+        cityPrices = new Set(tierCityItems.map((item) => item.price));
+      }
+
       tierButtons.forEach((button) => {
         button.setAttribute("aria-pressed", String(button.dataset.tierButton === activeTier));
       });
-      cityButtons.forEach((button) => {
-        const cityId = button.dataset.cityButton ?? "";
-        const countValue = cityCounts.get(cityId) ?? 0;
-        button.hidden = countValue === 0;
-        button.setAttribute("aria-pressed", String(cityId === activeCity));
-        const count = button.querySelector<HTMLElement>("[data-city-count]");
-        if (count) {
-          count.textContent = String(countValue);
-        }
-      });
+      if (citySelect) {
+        citySelect.value = activeCity;
+        Array.from(citySelect.options).forEach(option => {
+          const count = cityCounts.get(option.value) ?? 0;
+          option.disabled = count === 0;
+        });
+      }
+      if (filterSummary) filterSummary.textContent =
+        `${activeCategory === "All" ? "Any cuisine" : activeCategory} · ${activePrice === "All" ? "Any price" : activePrice}`;
       categoryButtons.forEach((button) => {
         const category = button.dataset.categoryButton ?? "All";
         button.hidden = category !== "All" && !cityCategories.has(category);
@@ -334,6 +346,13 @@ const cityItemNumber = (id: string, cityId: string) =>
       const city = cities.find((item) => item.id === activeCity) ?? defaultCityData;
       const tier = tiers.find((item) => item.id === activeTier) ?? tiers[0];
       if (mapCity) mapCity.textContent = city.name;
+      if (randomizerCity) randomizerCity.textContent = city.shortName;
+      if (renderedRandomizerCity !== activeCity && !randomizer?.classList.contains("is-spinning")) {
+        renderedRandomizerCity = activeCity;
+        lastRandomRecommendation = "";
+        showSlotResult();
+        if (spinStatus) spinStatus.textContent = "Includes all restaurants in this city.";
+      }
       mapElement.setAttribute("aria-label", `Map of ${city.shortName} restaurant recommendations`);
       if (editionLabel) editionLabel.textContent = `${city.shortName} · ${tier?.label ?? "List"}`;
 
@@ -375,11 +394,10 @@ const cityItemNumber = (id: string, cityId: string) =>
       });
     });
 
-    cityButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        activeCity = button.dataset.cityButton ?? activeCity;
-        updateGuide(true);
-      });
+    citySelect?.addEventListener("change", () => {
+      cancelDraw();
+      activeCity = citySelect.value;
+      updateGuide(true);
     });
 
     categoryButtons.forEach((button) => {
@@ -394,6 +412,43 @@ const cityItemNumber = (id: string, cityId: string) =>
         activePrice = (button.dataset.priceButton ?? "All") as RecommendationPrice | "All";
         updateGuide(true);
       });
+    });
+
+    spinButton?.addEventListener("click", () => {
+      const pool = guideRecommendations.filter(item => item.cityId === activeCity);
+      if (!pool.length || spinButton.disabled) return;
+      cancelDraw();
+      const fresh = pool.filter(item => item.id !== lastRandomRecommendation);
+      const candidates = fresh.length ? fresh : pool;
+      const winner = candidates[Math.floor(Math.random() * candidates.length)]!;
+      const finish = () => {
+        cancelDraw();
+        lastRandomRecommendation = winner.id;
+        showSlotResult(winner);
+        activeTier = "all";
+        activeCategory = "All";
+        activePrice = "All";
+        updateGuide(false);
+        selectRecommendation(winner.id);
+        map.setView([winner.coordinates.lat, winner.coordinates.lng], 14, { animate: !prefersReducedMotion() });
+        markers.get(winner.id)?.openTooltip();
+        if (spinStatus) spinStatus.textContent = `Tonight’s pick: ${winner.name}. Selected in the list below.`;
+        randomizer?.classList.add("has-result");
+        window.dispatchEvent(new CustomEvent("site-sound", { detail: { name: "reveal" } }));
+      };
+      if (prefersReducedMotion()) { finish(); return; }
+      spinButton.disabled = true;
+      randomizer?.classList.remove("has-result");
+      randomizer?.classList.add("is-spinning");
+      if (spinStatus) spinStatus.textContent = "Choosing a restaurant…";
+      if (slotCategory) slotCategory.textContent = "…";
+      if (slotPrice) slotPrice.textContent = "…";
+      if (slotRestaurant) slotRestaurant.textContent = "A good place awaits.";
+      finishPendingDraw = finish;
+      window.dispatchEvent(new CustomEvent("site-sound", { detail: { name: "shuffle" } }));
+      drawTimers.push(window.setTimeout(() => { if (slotCategory) slotCategory.textContent = winner.category; }, 260));
+      drawTimers.push(window.setTimeout(() => { if (slotPrice) slotPrice.textContent = winner.price; }, 460));
+      drawTimers.push(window.setTimeout(finish, 720));
     });
 
     cards.forEach(bindCard);

@@ -1,32 +1,35 @@
 ---
-import SiteHeader from "../components/SiteHeader.astro";
-import "../styles/global.css";
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { recommendations, cities } from "../data/recommendations";
+
+// Temporarily unpublished. Keep the page content below for when About is ready.
+return Astro.redirect("/food/", 302);
 ---
-
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="description" content="website" />
-    <meta property="og:title" content="brian" />
-    <meta property="og:description" content="website" />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="brian" />
-    <meta name="twitter:description" content="website" />
-    <meta name="theme-color" content="#0c0b20" />
-    <link rel="icon" type="image/png" sizes="104x104" href="/favicon.png" />
-    <title>brian</title>
-  </head>
-  <body class="guide-page">
-    <div class="ambient ambient-one" aria-hidden="true"></div>
-    <div class="ambient ambient-two" aria-hidden="true"></div>
-
-    <SiteHeader active="resume" />
-
-    <main class="resume-shell section-shell">
-      <h1>Coming soon.</h1>
-    </main>
-  </body>
-</html>
+<SiteLayout active="resume" title="A small introduction — Brian" description="A personal collection of places to eat, photographs to explore, and more to come.">
+  <section class="about-shell section-shell">
+    <header class="page-heading about-heading">
+      <div>
+        <p class="eyebrow">00 / A small introduction</p>
+        <h1>A few things<br />worth <em>sharing.</em></h1>
+      </div>
+      <p>I’m Brian. This is a home for my restaurant recommendations and photography. A little collection, always in progress.</p>
+    </header>
+    <div class="about-collections">
+      <a class="collection-card" href="/food/">
+        <span class="collection-number">01 / Food</span>
+        <span class="collection-art food-art" aria-hidden="true">✳</span>
+        <h2>Keep a good table.</h2>
+        <p>{recommendations.length} personal picks across {cities.length} cities.</p>
+        <span class="collection-link">Explore the food guide <span aria-hidden="true">↗</span></span>
+      </a>
+      <a class="collection-card" href="/photos/">
+        <span class="collection-number">02 / Photos</span>
+        <span class="collection-art photo-art" aria-hidden="true">◎</span>
+        <h2>Take the scenic route.</h2>
+        <p>Five daily photos. Guess their countries and see your score.</p>
+        <span class="collection-link">Try the photo game <span aria-hidden="true">↗</span></span>
+      </a>
+    </div>
+    <p class="about-note"><span aria-hidden="true">✦</span> More about me is on its way. For now, have a look around.</p>
+  </section>
+</SiteLayout>

@@ -1,0 +1,336 @@
+---
+import { countries } from "../data/countries";
+import { photographs } from "../data/photography";
+import { DAILY_PHOTO_COUNT } from "../lib/photography";
+const ready = photographs.length >= DAILY_PHOTO_COUNT;
+const isDemoRoll = photographs.length > 0 && photographs.every(photo => photo.demo);
+const rounds = Array.from({ length: DAILY_PHOTO_COUNT }, (_, i) => i);
+---
+
+<section class="photo-experience section-shell" data-photo-game aria-label="Daily photo country game">
+  <header class="page-heading photo-heading">
+    <div><p class="eyebrow">02 / Photos</p><h1>Guess the <em>country.</em></h1></div>
+    <p>Five photos each day. One guess per photo, one point per correct answer.</p>
+  </header>
+
+  {ready ? (
+    <>
+      <div class="photo-roll-note">
+        <span class="roll-badge">{isDemoRoll ? "Demo photos" : "Camera roll"}</span>
+        <p><span data-daily-date>Today</span> · Resets at midnight UTC.</p>
+      </div>
+      <div class="photo-game-shell">
+        <div class="photo-game-topbar">
+          <div class="photo-game-stat"><span>Photo</span><strong><i data-photo-position>01</i><span> / 05</span></strong></div>
+          <div class="photo-game-stat score-stat"><span>Score</span><strong><i data-photo-score>0</i><span> / 5</span></strong></div>
+          <div class="roll-progress" aria-label="Daily game progress">
+            {rounds.map(i => <span data-progress-dot={i} aria-hidden="true"></span>)}
+          </div>
+          <button class="browse-toggle" type="button" data-browse-toggle aria-describedby="browse-help">Reveal &amp; browse</button>
+        </div>
+        <div class="photo-stage">
+          <figure class="photo-frame" data-photo-frame aria-label="Travel photograph" data-loading="true">
+            <img data-photo-image alt="Travel photograph" width="1440" height="960" decoding="async" />
+            <div class="photo-load-state" data-photo-loading role="status">Loading today’s photo…</div>
+            <div class="photo-load-state" data-photo-error hidden role="status"><p>This photo couldn’t load.</p><button type="button" class="quiet-button" data-photo-retry>Try again</button></div>
+            <figcaption class="photo-reveal" data-photo-reveal hidden>
+              <span data-photo-place></span><strong data-photo-country></strong><p data-photo-caption></p>
+              <a class="photo-credit" data-photo-credit target="_blank" rel="noreferrer"></a>
+            </figcaption>
+          </figure>
+          <aside class="guess-card">
+            <div class="guess-card-top"><span class="guess-round" data-guess-round>Photo 1 of 5</span></div>
+            <h2 data-guess-heading tabindex="-1">Which country?</h2>
+            <p class="guess-help" data-guess-help>Choose the country shown in the photo. You have one guess.</p>
+            <form class="country-form" data-country-form novalidate>
+              <label for="country-guess">Your country guess</label>
+              <input id="country-guess" data-country-input name="country" type="text" list="country-options" placeholder="Start typing a country…" autocomplete="off" spellcheck="false" maxlength="100" aria-describedby="guess-feedback" />
+              <datalist id="country-options">{countries.map(country => <option value={country}></option>)}</datalist>
+              <button class="guess-button" type="submit" data-sound="none">Submit guess</button>
+            </form>
+            <div class="guess-feedback" id="guess-feedback" data-guess-feedback aria-live="polite" aria-atomic="true"></div>
+            <div class="guess-actions">
+              <button class="skip-button" type="button" data-skip-photo data-sound="none">Skip &amp; reveal · 0 points</button>
+              <button class="next-photo-button" type="button" data-next-photo hidden>Next photo <span aria-hidden="true">→</span></button>
+            </div>
+            <section class="daily-result" data-daily-result hidden aria-labelledby="daily-result-heading">
+              <p class="eyebrow">Daily game complete</p>
+              <h3 id="daily-result-heading" tabindex="-1">Your daily score</h3>
+              <p class="daily-final-score"><strong data-final-score>0</strong><span> / 5</span></p>
+              <p data-complete-summary></p>
+              <ol class="daily-results-list" data-results-list></ol>
+              <p class="daily-reset">Resets at midnight UTC.</p>
+            </section>
+            <p class="browse-help" id="browse-help" data-browse-help>Reveal &amp; browse skips all unanswered photos for today.</p>
+            <div class="photo-navigation" role="group" aria-label="Photo navigation">
+              <button type="button" data-previous-photo aria-label="Previous photo">←</button>
+              <span data-navigation-label>Today’s photos</span>
+              <button type="button" data-forward-photo aria-label="Next photo">→</button>
+            </div>
+          </aside>
+        </div>
+        <div class="photo-bottom-bar">
+          <div class="photo-filmstrip" role="group" aria-label="Daily photographs">
+            {rounds.map(index => (
+              <button type="button" data-photo-thumbnail={index} aria-label={`Photo ${index + 1}`} aria-current={index === 0 ? "true" : undefined} disabled={index > 0}>
+                <img data-thumbnail-image alt="" width="120" height="80" hidden />
+                <span>{String(index + 1).padStart(2, "0")}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <p class="sample-note" data-storage-note>Your progress is saved in this browser.</p>
+      <noscript><p class="sample-note">Enable JavaScript to play the daily photo game.</p></noscript>
+    </>
+  ) : (
+    <div class="photo-empty-state"><h2>The daily game is coming soon.</h2><p>Five photographs are needed for a complete daily game.</p></div>
+  )}
+</section>
+
+<script>
+  import { countries } from "../data/countries";
+  import { photographs } from "../data/photography";
+  import {
+    DAILY_PHOTO_COUNT, answerDailyPhoto, canonicalCountryName, chooseDailyPhotos,
+    dailyPhotoDate, photoGameScore, restoreDailyPhotoProgress,
+  } from "../lib/photography";
+
+  const game = document.querySelector<HTMLElement>("[data-photo-game]");
+  const image = game?.querySelector<HTMLImageElement>("[data-photo-image]");
+
+  if (game && image && photographs.length >= DAILY_PHOTO_COUNT) {
+    const find = <T extends HTMLElement>(selector: string) => game.querySelector<T>(selector)!;
+    const position = find<HTMLElement>("[data-photo-position]");
+    const score = find<HTMLElement>("[data-photo-score]");
+    const browse = find<HTMLButtonElement>("[data-browse-toggle]");
+    const reveal = find<HTMLElement>("[data-photo-reveal]");
+    const place = find<HTMLElement>("[data-photo-place]");
+    const country = find<HTMLElement>("[data-photo-country]");
+    const caption = find<HTMLElement>("[data-photo-caption]");
+    const credit = find<HTMLAnchorElement>("[data-photo-credit]");
+    const heading = find<HTMLElement>("[data-guess-heading]");
+    const help = find<HTMLElement>("[data-guess-help]");
+    const round = find<HTMLElement>("[data-guess-round]");
+    const form = find<HTMLFormElement>("[data-country-form]");
+    const input = find<HTMLInputElement>("[data-country-input]");
+    const feedback = find<HTMLElement>("[data-guess-feedback]");
+    const skip = find<HTMLButtonElement>("[data-skip-photo]");
+    const next = find<HTMLButtonElement>("[data-next-photo]");
+    const previous = find<HTMLButtonElement>("[data-previous-photo]");
+    const forward = find<HTMLButtonElement>("[data-forward-photo]");
+    const frame = find<HTMLElement>("[data-photo-frame]");
+    const loading = find<HTMLElement>("[data-photo-loading]");
+    const error = find<HTMLElement>("[data-photo-error]");
+    const submit = form.querySelector<HTMLButtonElement>("button")!;
+    const result = find<HTMLElement>("[data-daily-result]");
+    const resultsList = find<HTMLOListElement>("[data-results-list]");
+    const resultHeading = find<HTMLElement>("#daily-result-heading");
+    const storageNote = find<HTMLElement>("[data-storage-note]");
+    const thumbnails = Array.from(game.querySelectorAll<HTMLButtonElement>("[data-photo-thumbnail]"));
+    const dots = Array.from(game.querySelectorAll<HTMLElement>("[data-progress-dot]"));
+    const countryNames = new Set(countries.map(canonicalCountryName));
+    const storageKey = (day: string) => `brian-daily-photos-v1:${day}`;
+    const readStorage = (day: string) => {
+      try { return localStorage.getItem(storageKey(day)); }
+      catch { storageNote.textContent = "Progress is kept for this visit. Browser storage is unavailable."; return null; }
+    };
+    let day = dailyPhotoDate();
+    let dailyPhotos = chooseDailyPhotos(photographs, day);
+    let progress = restoreDailyPhotoProgress(readStorage(day), day, dailyPhotos);
+    let activeIndex = Math.min(progress.answers.length, DAILY_PHOTO_COUNT - 1);
+    let loadedId = "";
+    let loadingGeneration = 0;
+    let ready = false;
+    const sound = (name: string) => window.dispatchEvent(new CustomEvent("site-sound", { detail: { name } }));
+    const save = () => {
+      try { localStorage.setItem(storageKey(day), JSON.stringify(progress)); }
+      catch { storageNote.textContent = "Progress is kept for this visit. Browser storage is unavailable."; }
+    };
+    const loadPhoto = () => {
+      const photo = dailyPhotos[activeIndex]!;
+      const generation = ++loadingGeneration;
+      loadedId = photo.id;
+      ready = false;
+      frame.dataset.loading = "true";
+      frame.dataset.error = "false";
+      loading.hidden = false;
+      error.hidden = true;
+      submit.disabled = true;
+      const settle = (failed: boolean) => {
+        if (generation !== loadingGeneration) return;
+        ready = !failed;
+        frame.dataset.loading = "false";
+        frame.dataset.error = String(failed);
+        loading.hidden = true;
+        error.hidden = !failed;
+        submit.disabled = failed;
+      };
+      image.onload = () => settle(false);
+      image.onerror = () => settle(true);
+      image.alt = photo.alt;
+      image.src = photo.src;
+      if (image.complete) settle(image.naturalWidth === 0);
+    };
+
+    const render = () => {
+      const photo = dailyPhotos[activeIndex]!;
+      const answer = progress.answers[activeIndex];
+      const finished = progress.answers.length === DAILY_PHOTO_COUNT;
+      const isRevealed = Boolean(answer);
+      const oldFocus = document.activeElement;
+      const focusWillHide = (isRevealed && (form.contains(oldFocus) || oldFocus === skip))
+        || (!isRevealed && oldFocus === next) || (finished && oldFocus === browse);
+      if (loadedId !== photo.id) loadPhoto();
+      position.textContent = String(activeIndex + 1).padStart(2, "0");
+      score.textContent = String(photoGameScore(progress.answers));
+      find<HTMLElement>("[data-daily-date]").textContent = day;
+      // Populate location and credits only when the answer is revealed.
+      place.textContent = isRevealed ? [photo.place, photo.year].filter(Boolean).join(" · ") : "";
+      country.textContent = isRevealed ? photo.country : "";
+      caption.textContent = isRevealed ? photo.caption ?? "" : "";
+      caption.hidden = !photo.caption;
+      credit.hidden = !isRevealed || !photo.credit;
+      credit.removeAttribute("href");
+      credit.textContent = "";
+      if (isRevealed && photo.credit) {
+        credit.textContent = `${photo.demo ? "Demo photo" : "Photo"} by ${photo.credit.name} ↗`;
+        credit.href = photo.credit.url;
+      }
+      reveal.hidden = !isRevealed;
+      form.hidden = isRevealed;
+      skip.hidden = isRevealed;
+      next.hidden = !isRevealed || finished;
+      browse.hidden = finished;
+      find<HTMLElement>("[data-browse-help]").hidden = finished;
+      game.dataset.outcome = answer?.outcome ?? "";
+      round.textContent = finished ? "Complete" : `Photo ${activeIndex + 1} of 5`;
+      heading.hidden = finished;
+      help.hidden = finished;
+      feedback.hidden = finished;
+      heading.textContent = isRevealed ? photo.country : "Which country?";
+      help.textContent = !answer ? "Choose the country shown in the photo. You have one guess."
+        : answer.outcome !== "skipped" ? `Your guess: ${answer.guess}.`
+        : "Photo skipped.";
+      feedback.textContent = answer?.outcome === "correct" ? "Correct. +1 point."
+        : answer?.outcome === "incorrect" ? `The answer is ${photo.country}. 0 points.`
+        : answer?.outcome === "skipped" ? "Revealed. 0 points." : "";
+      feedback.dataset.state = answer?.outcome ?? "";
+      input.value = "";
+      input.removeAttribute("aria-invalid");
+      result.hidden = !finished;
+      if (finished) {
+        const total = photoGameScore(progress.answers);
+        find<HTMLElement>("[data-final-score]").textContent = String(total);
+        find<HTMLElement>("[data-complete-summary]").textContent = `${total} of 5 correct.`;
+        resultsList.replaceChildren(...dailyPhotos.map((item, i) => {
+          const li = document.createElement("li");
+          const location = document.createElement("span");
+          const outcome = document.createElement("span");
+          location.textContent = `${i + 1}. ${item.country}`;
+          outcome.textContent = progress.answers[i]!.outcome === "correct" ? "Correct · +1" : progress.answers[i]!.outcome === "skipped" ? "Skipped · 0" : "Incorrect · 0";
+          li.dataset.outcome = progress.answers[i]!.outcome;
+          li.append(location, outcome);
+          return li;
+        }));
+      }
+      const lastUnlocked = Math.min(progress.answers.length, DAILY_PHOTO_COUNT - 1);
+      previous.disabled = activeIndex === 0;
+      forward.disabled = activeIndex >= lastUnlocked;
+      next.textContent = activeIndex < lastUnlocked ? "Next photo →" : "Continue →";
+      find<HTMLElement>("[data-navigation-label]").textContent = finished ? "Review photos" : "Today’s photos";
+      thumbnails.forEach((thumbnail, index) => {
+        const state = progress.answers[index]?.outcome ?? "";
+        thumbnail.disabled = index > lastUnlocked;
+        thumbnail.setAttribute("aria-current", String(index === activeIndex));
+        thumbnail.dataset.outcome = state;
+        thumbnail.setAttribute("aria-label", `Photo ${index + 1}${state ? ", " + state : index > lastUnlocked ? ", not yet unlocked" : ", your next guess"}`);
+        const thumb = thumbnail.querySelector<HTMLImageElement>("[data-thumbnail-image]")!;
+        thumb.hidden = !state;
+        if (state) thumb.src = dailyPhotos[index]!.thumbnail ?? dailyPhotos[index]!.src;
+        else thumb.removeAttribute("src");
+        dots[index]!.dataset.state = state;
+        dots[index]!.classList.toggle("is-current", index === activeIndex);
+      });
+      if (focusWillHide) (finished ? resultHeading : isRevealed ? next : heading).focus({ preventScroll: true });
+    };
+
+    const checkDay = () => {
+      const today = dailyPhotoDate();
+      if (today === day) return false;
+      day = today;
+      dailyPhotos = chooseDailyPhotos(photographs, day);
+      progress = restoreDailyPhotoProgress(readStorage(day), day, dailyPhotos);
+      activeIndex = Math.min(progress.answers.length, DAILY_PHOTO_COUNT - 1);
+      loadedId = "";
+      render();
+      return true;
+    };
+    const goToPhoto = (index: number) => {
+      if (checkDay()) return;
+      const lastUnlocked = Math.min(progress.answers.length, DAILY_PHOTO_COUNT - 1);
+      if (index < 0 || index > lastUnlocked) return;
+      activeIndex = index;
+      render();
+    };
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      if (checkDay() || progress.answers[activeIndex] || !ready) return;
+      const guess = input.value.trim();
+      if (!guess || !countryNames.has(canonicalCountryName(guess))) {
+        feedback.textContent = guess ? "Choose a country from the suggestions. Your guess hasn’t been used." : "Type or choose a country first.";
+        feedback.dataset.state = "incorrect";
+        input.setAttribute("aria-invalid", "true");
+        input.focus();
+        return;
+      }
+      progress = answerDailyPhoto(progress, dailyPhotos, activeIndex, guess);
+      save();
+      render();
+      sound(progress.answers[activeIndex]?.outcome === "correct" ? "success" : "error");
+    });
+    skip.addEventListener("click", () => {
+      if (checkDay()) return;
+      progress = answerDailyPhoto(progress, dailyPhotos, activeIndex, null);
+      save();
+      render();
+      sound("reveal");
+    });
+    next.addEventListener("click", () => goToPhoto(activeIndex + 1));
+    previous.addEventListener("click", () => goToPhoto(activeIndex - 1));
+    forward.addEventListener("click", () => goToPhoto(activeIndex + 1));
+    find<HTMLButtonElement>("[data-photo-retry]").addEventListener("click", () => {
+      heading.focus({ preventScroll: true });
+      loadPhoto();
+    });
+    browse.addEventListener("click", () => {
+      if (checkDay()) return;
+      while (progress.answers.length < DAILY_PHOTO_COUNT) {
+        progress = answerDailyPhoto(progress, dailyPhotos, progress.answers.length, null);
+      }
+      save();
+      render();
+    });
+    thumbnails.forEach(thumbnail => thumbnail.addEventListener("click", () => goToPhoto(Number(thumbnail.dataset.photoThumbnail))));
+    game.addEventListener("keydown", event => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement) || target.closest("input, select, textarea, [contenteditable]")) return;
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      event.preventDefault();
+      goToPhoto(activeIndex + (event.key === "ArrowLeft" ? -1 : 1));
+    });
+    const onVisible = () => { if (!document.hidden) checkDay(); };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", checkDay);
+    window.addEventListener("storage", event => {
+      if (event.key !== storageKey(day)) return;
+      progress = restoreDailyPhotoProgress(readStorage(day), day, dailyPhotos);
+      activeIndex = Math.min(progress.answers.length, DAILY_PHOTO_COUNT - 1);
+      render();
+    });
+    const rolloverTimer = window.setInterval(checkDay, 60_000);
+    window.addEventListener("pagehide", () => window.clearInterval(rolloverTimer), { once: true });
+    render();
+  }
+</script>

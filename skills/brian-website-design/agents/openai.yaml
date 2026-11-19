@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brian Website Design"
+  short_description: "Tactile interactions and calm personal-site design"
+  default_prompt: "Use $brian-website-design to design or audit this project's visual style and interactions."
