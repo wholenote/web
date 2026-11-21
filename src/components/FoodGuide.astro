@@ -4,9 +4,11 @@ import { WORLD_VIEW } from "../lib/recommendations";
 const orderedRecommendations = [...recommendations].sort(
   (a, b) => Number(b.tier === "favorite") - Number(a.tier === "favorite"),
 );
-const defaultCity = cities[0]?.id ?? "";
+const defaultCity = WORLD_VIEW;
 const defaultTier = tiers[0]?.id ?? "all";
-const cityCount = (cityId: string) => recommendations.filter(item => item.cityId === cityId).length;
+const cityCount = (cityId: string) => cityId === WORLD_VIEW
+  ? recommendations.length
+  : recommendations.filter(item => item.cityId === cityId).length;
 const orderedCities = [...cities].sort((a, b) => cityCount(b.id) - cityCount(a.id));
 const cityItemNumber = (id: string, cityId: string) =>
   orderedRecommendations.filter(item => item.cityId === cityId).findIndex(item => item.id === id) + 1;
@@ -22,7 +24,7 @@ const cityItemNumber = (id: string, cityId: string) =>
   <div class="guide-toolbar" aria-label="food guide controls">
     <div class="city-select-wrap">
       <select id="guide-city" data-city-select aria-label="city">
-        <option value={WORLD_VIEW} data-world-option disabled>world view</option>
+        <option value={WORLD_VIEW} data-world-option selected disabled>world view</option>
         {orderedCities.map(city => <option value={city.id} selected={city.id === defaultCity}>{city.shortName.toLowerCase()}</option>)}
       </select>
     </div>
@@ -53,7 +55,7 @@ const cityItemNumber = (id: string, cityId: string) =>
       </div>
     </div>
   <div class="results-bar">
-    <p role="status"><strong data-result-count>{cityCount(defaultCity)}</strong> places <span class="result-separator">/</span> <span data-edition-label>austin · all</span></p>
+    <p role="status"><strong data-result-count>{cityCount(defaultCity)}</strong> places <span class="result-separator">/</span> <span data-edition-label>world view</span></p>
     <div class="results-tools">
       <button class="randomizer-toggle" type="button" data-randomizer-toggle aria-label="pick randomly" title="pick randomly" aria-expanded="false" aria-controls="restaurant-picker" hidden>
         <svg viewBox="0 0 20 20" width="20" height="20" fill="none" aria-hidden="true">
@@ -82,7 +84,7 @@ const cityItemNumber = (id: string, cityId: string) =>
     <div class="recommendation-panel">
       <div class="recommendation-list" data-recommendation-list aria-label="restaurant recommendations" tabindex="0">
         {orderedRecommendations.map(item => (
-          <article class="recommendation-card" data-recommendation={item.id} data-city={item.cityId} data-category={item.category} data-tier={item.tier} data-price={item.price} hidden={item.cityId !== defaultCity}>
+          <article class="recommendation-card" data-recommendation={item.id} data-city={item.cityId} data-category={item.category} data-tier={item.tier} data-price={item.price}>
             {item.tier === "favorite" && (
               <span class="card-favorite" data-favorite>
                 <button class="card-star" type="button" aria-label="favorite restaurant" aria-describedby={`${item.id}-favorite-tip`} data-sound="none">★</button>
@@ -105,8 +107,8 @@ const cityItemNumber = (id: string, cityId: string) =>
       <div class="empty-state" data-empty-state hidden><span aria-hidden="true">◇</span><p>no places match those filters yet.</p></div>
     </div>
     <div class="map-card" id="restaurant-map">
-      <div class="map-chrome"><span class="map-light" aria-hidden="true"></span><span data-map-city>{cities[0]?.name}</span></div>
-      <div class="map-stage"><div class="real-map" data-real-map aria-label={`map of ${cities[0]?.shortName} restaurant recommendations`}></div></div>
+      <div class="map-chrome"><span class="map-light" aria-hidden="true"></span><span data-map-city>world view</span></div>
+      <div class="map-stage"><div class="real-map" data-real-map aria-label="world map of all restaurant recommendations"></div></div>
     </div>
   </div>
 </section>
