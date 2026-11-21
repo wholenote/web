@@ -1,0 +1,351 @@
+---
+import { experience, education } from "../data/resume";
+---
+
+<section class="resume-experience" aria-label="resume" data-resume>
+  <h1 id="resume-name" class="sr-only">brian wang’s resume</h1>
+  <div class="resume-card-wrap">
+    <article class="business-card" aria-labelledby="resume-name" data-card>
+      <svg class="pixel-mask-defs" width="0" height="0" aria-hidden="true" focusable="false">
+        <defs><clipPath id="resume-pixel-reveal" clipPathUnits="userSpaceOnUse"><path data-pixel-path /></clipPath></defs>
+      </svg>
+      <div class="business-card-face" data-face>
+        <div class="card-layer business-card-identity" data-identity>
+          <div class="business-card-intro">
+            <div>
+              <h2 class="business-card-name">brian wang</h2>
+              <p class="business-card-title">senior security engineer</p>
+            </div>
+            <span class="business-card-monogram" aria-hidden="true">bw.</span>
+          </div>
+          <p class="business-card-summary">threat detection, ai security & automation.</p>
+          <div class="business-card-contact">
+            <a href="mailto:brian.bwang@proton.me">brian.bwang@proton.me</a>
+          </div>
+          <div class="experience-index" aria-label="experience">
+            {experience.map((job) => (
+              <button type="button" class="experience-trigger" id={`trigger-${job.id}`} data-experience={job.id} aria-expanded="true" aria-controls={`experience-${job.id}`}>
+                <span class="experience-company">{job.company}</span>
+                <span class="experience-years">{job.dates}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        {experience.map((job) => (
+          <section class="card-layer experience-detail" id={`experience-${job.id}`} aria-labelledby={`role-${job.id}`} data-panel={job.id} tabindex="0">
+            <div class="experience-detail-heading">
+              <p class="experience-meta">{job.company} · {job.dates}</p>
+              <h2 id={`role-${job.id}`}>{job.role}</h2>
+            </div>
+            <ul class="experience-highlights">
+              {job.cardHighlights.map((highlight) => <li>{highlight}</li>)}
+            </ul>
+          </section>
+        ))}
+        <svg class="pixel-scan" aria-hidden="true" focusable="false"><path data-scan-path /></svg>
+      </div>
+    </article>
+    <div class="resume-links">
+      <a href="/resume/brian-wang-resume.pdf" target="_blank" rel="noopener">full resume <span class="pdf-label">pdf</span></a>
+      <button type="button" data-close hidden>back to my card</button>
+    </div>
+    <button class="education-trigger" type="button" aria-haspopup="dialog" aria-controls="resume-education" data-education-open hidden>education & certifications</button>
+  </div>
+  <details class="resume-background" data-education-fallback>
+    <summary>education & certifications <span aria-hidden="true">+</span></summary>
+    <div class="resume-background-content" data-education-content>
+      {education.map((item) => <div><p>{item.school}</p><span>{item.degree} · {item.year}</span></div>)}
+      <p class="resume-certifications">GPEN · GWAPT</p>
+    </div>
+  </details>
+  <dialog class="education-dialog" id="resume-education" aria-labelledby="education-heading" data-education-dialog>
+    <div class="education-dialog-heading">
+      <h2 id="education-heading">education & certifications</h2>
+      <form method="dialog"><button type="submit" autofocus>close</button></form>
+    </div>
+    <div data-education-slot></div>
+  </dialog>
+  <p class="resume-status sr-only" aria-live="polite" aria-atomic="true" data-resume-status></p>
+</section>
+
+<script>
+  import { prefersReducedMotion } from "../lib/motion";
+
+  const root = document.querySelector<HTMLElement>("[data-resume]");
+  if (root) {
+    const card = root.querySelector<HTMLElement>("[data-card]")!;
+    const face = root.querySelector<HTMLElement>("[data-face]")!;
+    const mask = root.querySelector<SVGPathElement>("[data-pixel-path]")!;
+    const scan = root.querySelector<SVGPathElement>("[data-scan-path]")!;
+    const identity = root.querySelector<HTMLElement>("[data-identity]")!;
+    const triggers = Array.from(root.querySelectorAll<HTMLButtonElement>("[data-experience]"));
+    const panels = Array.from(root.querySelectorAll<HTMLElement>("[data-panel]"));
+    const layers = [identity, ...panels];
+    const close = root.querySelector<HTMLButtonElement>("[data-close]")!;
+    const status = root.querySelector<HTMLElement>("[data-resume-status]")!;
+    const educationTrigger = root.querySelector<HTMLButtonElement>("[data-education-open]")!;
+    const educationDialog = root.querySelector<HTMLDialogElement>("[data-education-dialog]")!;
+    const educationFallback = root.querySelector<HTMLDetailsElement>("[data-education-fallback]")!;
+    const educationContent = root.querySelector<HTMLElement>("[data-education-content]")!;
+    const hover = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let active: string | null = null;
+    let activeLayer = identity;
+    let originTrigger = triggers[0]!;
+    let frame = 0;
+    let movingFocus = false;
+
+    const setAccessible = (layer: HTMLElement, visible: boolean) => {
+      layer.inert = !visible;
+      layer.setAttribute("aria-hidden", String(!visible));
+    };
+    const settle = () => {
+      cancelAnimationFrame(frame);
+      frame = 0;
+      for (const layer of layers) {
+        layer.dataset.painted = String(layer === activeLayer);
+        layer.style.removeProperty("clip-path");
+        layer.style.removeProperty("z-index");
+      }
+      mask.setAttribute("d", "");
+      scan.setAttribute("d", "");
+    };
+
+    const reveal = (incoming: HTMLElement, outgoing: HTMLElement, trigger: HTMLButtonElement) => {
+      if (prefersReducedMotion()) { settle(); return; }
+      const bounds = face.getBoundingClientRect();
+      const name = trigger.querySelector(".experience-company")!.getBoundingClientRect();
+      const origin = { x: name.left + name.width / 2 - bounds.left, y: name.top + name.height / 2 - bounds.top };
+      const size = 12;
+      const cells: { x: number; y: number; width: number; height: number; distance: number; threshold: number }[] = [];
+      for (let y = 0; y < bounds.height; y += size) {
+        for (let x = 0; x < bounds.width; x += size) {
+          const width = Math.min(size, bounds.width - x);
+          const height = Math.min(size, bounds.height - y);
+          cells.push({ x, y, width, height, distance: Math.hypot(x + width / 2 - origin.x, y + height / 2 - origin.y), threshold: 0 });
+        }
+      }
+      if (!cells.length) { settle(); return; }
+      const nearest = Math.min(...cells.map((cell) => cell.distance));
+      const range = Math.max(1, Math.max(...cells.map((cell) => cell.distance)) - nearest);
+      // Distance creates the expanding radar front; a fixed dither softens its pixel edge.
+      for (const cell of cells) {
+        const dither = ((cell.x / size * 17 + cell.y / size * 31) % 13) / 13;
+        cell.threshold = Math.max(0, (cell.distance - nearest) / range * .86 + (dither - .5) * .045);
+      }
+      outgoing.dataset.painted = "true";
+      incoming.dataset.painted = "true";
+      outgoing.style.zIndex = "1";
+      incoming.style.zIndex = "2";
+      mask.setAttribute("d", "M0 0");
+      incoming.style.clipPath = "url(#resume-pixel-reveal)";
+      const start = performance.now();
+      const duration = incoming === identity ? 950 : 1250;
+      const tick = (now: number) => {
+        const elapsed = Math.min(1, (now - start) / duration);
+        const progress = elapsed * elapsed * (3 - 2 * elapsed);
+        const path: string[] = [];
+        const edge: string[] = [];
+        for (const cell of cells) {
+          const growth = Math.min(1, Math.max(0, (progress - cell.threshold) / .14));
+          if (!growth) continue;
+          const width = cell.width * growth;
+          const height = cell.height * growth;
+          const x = cell.x + (cell.width - width) / 2;
+          const y = cell.y + (cell.height - height) / 2;
+          const square = `M${x.toFixed(2)} ${y.toFixed(2)}h${width.toFixed(2)}v${height.toFixed(2)}h-${width.toFixed(2)}z`;
+          path.push(square);
+          if (growth < 1) edge.push(square);
+        }
+        mask.setAttribute("d", path.join(""));
+        scan.setAttribute("d", edge.join(""));
+        if (elapsed < 1) frame = requestAnimationFrame(tick);
+        else settle();
+      };
+      frame = requestAnimationFrame(tick);
+    };
+
+    const select = (id: string | null, announce = false) => {
+      if (active === id || movingFocus) return;
+      // Resolve an interrupted sweep before starting the next, with no queued animations.
+      settle();
+      const outgoing = activeLayer;
+      const nextTrigger = triggers.find((trigger) => trigger.dataset.experience === id);
+      const focusWasInside = outgoing.contains(document.activeElement);
+      if (nextTrigger) originTrigger = nextTrigger;
+      active = id;
+      activeLayer = panels.find((panel) => panel.dataset.panel === id) ?? identity;
+      for (const layer of layers) setAccessible(layer, layer === activeLayer);
+      reveal(activeLayer, outgoing, originTrigger);
+      // The company handles disappear with the identity face. Keep keyboard focus
+      // on the revealed details, then restore it to the same handle on return.
+      if (focusWasInside) {
+        movingFocus = true;
+        (id ? activeLayer : originTrigger).focus({ preventScroll: true });
+        movingFocus = false;
+      }
+      for (const trigger of triggers) trigger.setAttribute("aria-expanded", String(trigger.dataset.experience === id));
+      root.dataset.open = String(Boolean(id));
+      status.textContent = announce
+        ? id ? `${originTrigger.querySelector(".experience-company")?.textContent?.trim()} experience shown.` : "Business card shown."
+        : "";
+    };
+
+    for (const trigger of triggers) {
+      trigger.setAttribute("aria-expanded", "false");
+      trigger.addEventListener("pointerenter", (event) => {
+        if (hover.matches && event.pointerType !== "touch") select(trigger.dataset.experience!);
+      });
+      trigger.addEventListener("pointerdown", (event) => {
+        // Reveal before the disappearing handle can receive native pointer focus.
+        // Keyboard focus still follows the separate focus handler below.
+        event.preventDefault();
+        select(trigger.dataset.experience!, true);
+      });
+      trigger.addEventListener("focus", () => select(trigger.dataset.experience!, true));
+      trigger.addEventListener("click", () => select(trigger.dataset.experience!, true));
+    }
+    card.addEventListener("pointerleave", (event) => {
+      if (hover.matches && event.pointerType !== "touch") select(null);
+    });
+    card.addEventListener("focusout", (event) => {
+      if (event.relatedTarget instanceof Node && !card.contains(event.relatedTarget) && event.relatedTarget !== close) select(null);
+    });
+    const restore = () => {
+      select(null, true);
+      movingFocus = true;
+      originTrigger.focus({ preventScroll: true });
+      movingFocus = false;
+    };
+    close.addEventListener("click", restore);
+    root.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && active) {
+        event.preventDefault();
+        restore();
+      }
+    });
+    motion.addEventListener("change", settle);
+    new ResizeObserver(settle).observe(face);
+    window.addEventListener("pagehide", settle);
+    root.querySelector("[data-education-slot]")!.append(educationContent);
+    educationFallback.hidden = true;
+    educationTrigger.hidden = false;
+    educationTrigger.addEventListener("click", () => {
+      select(null);
+      settle();
+      educationDialog.showModal();
+    });
+    educationDialog.addEventListener("click", (event) => {
+      if (event.target !== educationDialog) return;
+      const bounds = educationDialog.getBoundingClientRect();
+      if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) educationDialog.close();
+    });
+    educationDialog.addEventListener("close", () => educationTrigger.focus({ preventScroll: true }));
+    layers.forEach((layer) => setAccessible(layer, layer === identity));
+    settle();
+    close.hidden = false;
+    root.dataset.enhanced = "true";
+    root.dataset.open = "false";
+    document.documentElement.dataset.resumeEnhanced = "true";
+  }
+</script>
+
+<style>
+  .resume-experience { width: min(560px, calc(100% - 40px)); margin: 0 auto; padding-block: clamp(48px, 10svh, 96px) 48px; }
+  :global(html[data-resume-enhanced="true"]) { height: 100%; overflow: hidden; }
+  :global(html[data-resume-enhanced="true"] body) { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100dvh; min-height: 0; overflow: hidden; }
+  :global(html[data-resume-enhanced="true"] #main-content) { min-height: 0; overflow: hidden; }
+  [data-enhanced="true"].resume-experience { --resume-card-height: 300px; display: flex; flex-direction: column; justify-content: center; height: 100%; min-height: 0; padding-block: 16px max(16px, env(safe-area-inset-bottom)); }
+  [data-enhanced="true"] .resume-card-wrap { display: flex; flex: 0 1 auto; flex-direction: column; min-height: 0; max-height: 100%; }
+  [data-enhanced="true"] .business-card { flex: 0 1 var(--resume-card-height); min-height: 0; }
+  .resume-card-wrap { position: relative; }
+  .business-card { position: relative; background: #fff; border: 1px solid #e4e5e3; border-radius: 4px; box-shadow: 0 2px 4px #18241b04, 0 12px 28px -12px #18241b20, 0 32px 64px -28px #18241b20; }
+  .business-card-face { position: relative; overflow: hidden; isolation: isolate; }
+  .card-layer { padding: 24px 32px 20px; background: #fff; }
+  .business-card-identity { display: flex; flex-direction: column; }
+  .pixel-mask-defs { position: absolute; pointer-events: none; }
+  .pixel-scan { position: absolute; inset: 0; z-index: 3; width: 100%; height: 100%; pointer-events: none; fill: #dcebe1; opacity: .65; }
+  [data-enhanced="true"] .business-card-face { height: 100%; border-radius: inherit; }
+  [data-enhanced="true"] .card-layer { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; visibility: hidden; pointer-events: none; }
+  [data-enhanced="true"] [data-painted="true"] { visibility: visible; }
+  [data-enhanced="true"] .card-layer[aria-hidden="false"] { pointer-events: auto; }
+  .business-card-intro { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+  .business-card-name { margin: 0; font-size: clamp(32px, 4vw, 38px); font-weight: 500; letter-spacing: -.055em; line-height: 1.15; }
+  .business-card-title { margin: 8px 0 0; font-size: 14px; color: var(--ink-muted); }
+  .business-card-monogram { padding-top: 3px; font-size: 22px; font-weight: 500; letter-spacing: -.08em; color: #315647; }
+  .business-card-summary { margin: 18px 0; font-size: 16px; line-height: 1.65; letter-spacing: -.015em; }
+  .business-card-contact { margin-bottom: 12px; font-size: 13px; color: var(--ink-muted); }
+  .business-card-contact a { display: inline-flex; align-items: center; min-height: 32px; text-decoration: none; }
+  .business-card-contact a:hover { color: var(--ink); text-decoration: underline; }
+  .experience-index { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: auto; }
+  .experience-trigger { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 4px 0; border: 0; border-radius: 0; background: transparent; color: var(--ink-muted); text-align: left; }
+  .experience-company { display: inline-block; width: fit-content; font-size: 14px; font-weight: 500; }
+  .experience-years { font-size: 12px; }
+  .experience-trigger:hover, .experience-trigger[aria-expanded="true"] { color: #254c3c; background: transparent; }
+  .experience-trigger:focus-visible { position: relative; z-index: 2; outline-offset: 3px; }
+  .experience-trigger[aria-expanded="true"] .experience-company { font-weight: 600; }
+  .experience-detail { background: #fff; }
+  .experience-detail h2 { margin: 8px 0 0; font-size: 23px; line-height: 1.25; font-weight: 500; letter-spacing: -.035em; }
+  .experience-meta { margin: 0; color: #315647; font-size: 12px; }
+  .experience-highlights { display: grid; gap: 10px; padding-left: 16px; margin: 18px 0 0; font-size: 14px; line-height: 1.55; }
+  .experience-highlights li { padding-left: 4px; }
+  .experience-highlights li::marker { color: #729381; font-size: .75em; }
+  @media (hover: hover) and (pointer: fine) {
+    .resume-links [data-close] { display: none; }
+  }
+  .resume-links { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 24px; margin-top: 12px; }
+  .resume-links a, .resume-links button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; gap: 8px; padding: 4px; color: var(--ink-muted); font-size: 12px; }
+  .resume-links a { text-decoration: none; }
+  .resume-links a:hover { color: var(--ink); text-decoration: underline; }
+  .resume-links button { border: 0; background: transparent; }
+  .resume-links button:hover { color: var(--ink); }
+  [data-open="false"] [data-close] { display: none; }
+  .pdf-label { padding: 1px 4px; border: 1px solid #dce0dc; border-radius: 3px; font-size: 10px; line-height: 1.4; }
+  .resume-background { margin: 52px auto 0; max-width: 440px; font-size: 12px; color: var(--ink-muted); }
+  .resume-background summary { display: flex; justify-content: center; align-items: center; gap: 10px; min-height: 44px; width: fit-content; margin: auto; }
+  .resume-background summary > span { font-size: 16px; }
+  .resume-background[open] summary > span { transform: rotate(45deg); }
+  .resume-background-content { display: grid; gap: 20px; padding: 24px 0; text-align: center; }
+  .resume-background-content p { margin: 0; color: var(--ink); font-size: 14px; }
+  .resume-background-content span { display: block; margin-top: 4px; }
+  .education-trigger { align-self: center; flex: 0 0 auto; min-height: 44px; margin-top: 12px; padding: 8px 4px; border: 0; background: transparent; color: var(--ink-muted); font-size: 12px; }
+  .education-trigger:hover { color: var(--ink); }
+  .education-dialog { width: min(460px, calc(100% - 32px)); max-height: calc(100dvh - 32px); margin: auto; padding: 24px 28px 28px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid #e4e5e3; border-radius: 4px; background: #fff; color: var(--ink); box-shadow: 0 24px 80px #18241b20; }
+  .education-dialog::backdrop { background: #282e2a20; }
+  .education-dialog[open] { animation: education-in 180ms var(--ease-settle); }
+  .education-dialog-heading { display: flex; align-items: start; justify-content: space-between; gap: 20px; }
+  .education-dialog-heading h2 { margin: 6px 0 0; font-size: 24px; font-weight: 500; line-height: 1.25; letter-spacing: -.035em; }
+  .education-dialog-heading button { min-height: 44px; min-width: 44px; padding: 8px 0 8px 8px; border: 0; background: transparent; color: var(--ink-muted); font-size: 12px; }
+  .education-dialog-heading button:hover { color: var(--ink); }
+  .education-dialog .resume-background-content { padding: 28px 0 0; gap: 24px; text-align: left; font-size: 13px; color: var(--ink-muted); }
+  .education-dialog .resume-background-content p { font-size: 16px; }
+  @keyframes education-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+  @media (max-width: 600px) {
+    .resume-experience { padding-top: 48px; }
+    [data-enhanced="true"].resume-experience { --resume-card-height: 340px; }
+    .card-layer { padding: 24px 24px 20px; }
+    .business-card-summary { margin-block: 16px; font-size: 15px; }
+    .business-card-contact { font-size: 12px; }
+    .experience-index { gap: 12px; }
+    .experience-company { font-size: 13px; gap: 4px; }
+    .experience-years { font-size: 12px; }
+    .experience-detail h2 { font-size: 22px; }
+    .resume-background { margin-top: 32px; }
+  }
+  @media (max-height: 520px) {
+    [data-enhanced="true"].resume-experience { padding-block: 4px; }
+    .resume-links { margin-top: 4px; }
+  }
+  @media (max-width: 600px) and (max-height: 650px) {
+    .card-layer { padding-block: 16px; }
+    .business-card-summary { margin-block: 12px; }
+    .business-card-contact { margin-bottom: 8px; }
+  }
+  @media (max-width: 360px) {
+    .resume-experience { width: calc(100% - 32px); }
+    .card-layer { padding-inline: 20px; }
+    .experience-index { gap: 8px; }
+    .experience-company { font-size: 12px; }
+  }
+</style>

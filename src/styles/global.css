@@ -32,6 +32,16 @@
 
 * { box-sizing: border-box; }
 html { background: var(--night); scroll-behavior: smooth; }
+html[data-theme="paper"] {
+  color-scheme: light;
+  --night: #ffffff;
+  --ink: #282e2a;
+  --ink-muted: #626963;
+  --gold: #315647;
+  --line: #e4e5e3;
+}
+html[data-theme="paper"] body { background: #fff; }
+html[data-theme="paper"] ::selection { background: #dcebe1; color: #254c3c; }
 body {
   margin: 0;
   min-width: 320px;
@@ -60,7 +70,7 @@ button, a, summary, input, select {
 .section-shell { width: var(--shell); margin-inline: auto; }
 .skip-link { position: fixed; top: 12px; left: 12px; z-index: 2000; padding: 12px 20px; background: var(--ink); color: var(--night); border-radius: 6px; transform: translateY(-180%); }
 .skip-link:focus { transform: none; }
-.site-header { min-height: 96px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.site-header { position: relative; z-index: 1200; min-height: 96px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 .site-name { display: inline-flex; align-items: center; gap: 12px; min-height: 44px; text-decoration: none; }
 .site-name-image { display: block; width: 44px; height: 44px; flex-shrink: 0; object-fit: contain; }
 .site-name-caption { font-size: 14px; white-space: nowrap; }
@@ -71,6 +81,7 @@ button, a, summary, input, select {
 .site-tab--unavailable { align-content: center; gap: 2px; cursor: default; }
 .coming-soon-tag { padding: 1px 0; font-size: 12px; line-height: 1.4; white-space: nowrap; }
 .site-tab[aria-current="page"] { font-weight: 600; }
+.site-menu-toggle { display: none; }
 
 .food-guide, .photo-experience, .about-shell { padding-block: var(--space-16) 88px; }
 .food-guide { padding-top: var(--space-8); }
@@ -309,6 +320,16 @@ details[open] > summary .disclosure-mark { transform: rotate(45deg); }
   .header-actions { display: contents; }
   .site-tabs { gap: 12px; order: 1; width: 100%; justify-content: space-between; }
   .site-tab--unavailable { padding-inline: 0; }
+  .site-header[data-menu-enhanced="true"] { flex-wrap: nowrap; }
+  .site-header[data-menu-enhanced="true"] .header-actions { position: relative; display: flex; flex-shrink: 0; }
+  .site-header[data-menu-enhanced="true"] .site-menu-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 4px; border: 0; background: transparent; color: var(--ink-muted); font-size: 14px; }
+  .site-menu-toggle:hover, .site-menu-toggle[aria-expanded="true"] { color: var(--ink); }
+  .site-menu-toggle svg { transition: transform var(--motion-fast); }
+  .site-menu-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+  .site-header[data-menu-enhanced="true"] .site-tabs { position: absolute; top: calc(100% + 8px); right: 0; display: none; flex-direction: column; align-items: stretch; gap: 4px; width: min(220px, calc(100vw - 32px)); max-height: calc(100dvh - 96px); overflow-y: auto; overscroll-behavior: contain; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--night); box-shadow: 0 12px 36px #0002; }
+  .site-header[data-menu-open="true"] .site-tabs { display: flex; }
+  .site-header[data-menu-enhanced="true"] .site-tab { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 8px 12px; font-size: 14px; }
+  .site-header[data-menu-enhanced="true"] .site-tab:focus-visible { outline-offset: -2px; }
   .food-guide, .photo-experience, .about-shell { padding-block: 36px 64px; }
   .food-guide { padding-top: var(--space-6); }
   .page-heading { margin-bottom: 28px; gap: 16px; }

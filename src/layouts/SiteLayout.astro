@@ -6,12 +6,13 @@ interface Props {
   active: "resume" | "food" | "photos";
   title: string;
   description: string;
+  theme?: "paper";
 }
-const { active, title, description } = Astro.props;
+const { active, title, description, theme } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme={theme}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
@@ -22,7 +23,7 @@ const { active, title, description } = Astro.props;
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    <meta name="theme-color" content="#0c0b20" />
+    <meta name="theme-color" content={theme === "paper" ? "#ffffff" : "#0c0b20"} />
     <link rel="icon" type="image/png" sizes="128x128" href="/favicon-holiday.png?v=59a011f0" />
     <title>{title}</title>
   </head>
