@@ -23,14 +23,11 @@ const { active, title, description } = Astro.props;
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="theme-color" content="#0c0b20" />
-    <link rel="icon" type="image/png" sizes="104x104" href="/favicon.png" />
+    <link rel="icon" type="image/png" sizes="128x128" href="/favicon-holiday.png?v=59a011f0" />
     <title>{title}</title>
   </head>
   <body>
     <SiteHeader active={active} />
     <main id="main-content" tabindex="-1"><slot /></main>
-    <footer class="guide-footer section-shell">
-      <span>Brian</span>
-    </footer>
   </body>
 </html>

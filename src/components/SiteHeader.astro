@@ -6,190 +6,23 @@ interface Props {
 const { active } = Astro.props;
 ---
 
-<a class="skip-link" href="#main-content">Skip to content</a>
-<header class="site-header section-shell">
-  <a class="site-name" href="/" aria-label="Brian home"><span lang="zh-Hans">王</span><span class="site-name-caption">Brian</span></a>
+<a class="skip-link" href="#main-content">skip to content</a>
+<header class="site-header section-shell" id="top">
+  <a class="site-name" href={active === "food" ? "#top" : "/food/"} aria-label="made by brian home">
+    <img class="site-name-image" src="/favicon-holiday.png?v=59a011f0" alt="" width="44" height="44" />
+    <span class="site-name-caption">made by brian</span>
+  </a>
   <div class="header-actions">
-    <nav class="site-tabs" aria-label="Primary navigation">
+    <nav class="site-tabs" aria-label="primary navigation">
       <span class="site-tab site-tab--unavailable" role="link" aria-disabled="true">
-        <span>About</span><span class="coming-soon-tag">Coming soon</span>
+        <span>resume</span><span class="coming-soon-tag">coming soon</span>
       </span>
       <a class="site-tab" href="/food/" aria-current={active === "food" ? "page" : undefined}>
-        Food
+        food
       </a>
       <span class="site-tab site-tab--unavailable" role="link" aria-disabled="true">
-        <span>Photos</span><span class="coming-soon-tag">Coming soon</span>
+        <span>photos</span><span class="coming-soon-tag">coming soon</span>
       </span>
     </nav>
-    <button
-      class="sound-toggle"
-      type="button"
-      data-sound-toggle
-      data-sound="none"
-      aria-label="Turn on interface sounds"
-      aria-pressed="false"
-      title="Turn on interface sounds"
-    >
-      <svg viewBox="0 0 22 18" aria-hidden="true">
-        <path class="sound-speaker" d="M2 7h3l4-3.5v11L5 11H2z"></path>
-        <path class="sound-wave sound-wave-one" d="M12 6.2c1.2 1 1.2 2.6 0 3.6"></path>
-        <path class="sound-wave sound-wave-two" d="M14.7 3.8c2.7 2.3 2.7 6.1 0 8.4"></path>
-        <path class="sound-muted-mark" d="m12.2 5.2 5.2 7.6m0-7.6-5.2 7.6"></path>
-      </svg>
-      <span>Sound</span>
-      <i aria-hidden="true"></i>
-    </button>
   </div>
 </header>
-
-<script>
-  type SoundName = "tap" | "hover" | "toggle" | "shuffle" | "reveal" | "success" | "error";
-  type SiteSoundEvent = CustomEvent<{ name?: SoundName }>;
-
-  const soundToggle = document.querySelector<HTMLButtonElement>("[data-sound-toggle]");
-  const AudioContextClass = window.AudioContext
-    ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  let audioContext: AudioContext | null = null;
-  let muted = true;
-  let lastSoundAt = 0;
-  let lastHoverTarget: Element | null = null;
-
-  try {
-    muted = window.localStorage.getItem("brian-site-sound") !== "on";
-  } catch {
-    muted = true;
-  }
-
-  const syncToggle = () => {
-    if (!soundToggle) return;
-    soundToggle.setAttribute("aria-pressed", String(!muted));
-    soundToggle.setAttribute("aria-label", muted ? "Turn on interface sounds" : "Mute interface sounds");
-    soundToggle.title = muted ? "Turn on interface sounds" : "Mute interface sounds";
-  };
-
-  const getAudioContext = () => {
-    if (!AudioContextClass || muted) return null;
-    audioContext ??= new AudioContextClass();
-    if (audioContext.state === "suspended") void audioContext.resume().catch(() => undefined);
-    return audioContext;
-  };
-
-  const tone = (
-    frequency: number,
-    duration: number,
-    volume: number,
-    type: OscillatorType = "sine",
-    delay = 0,
-  ) => {
-    const context = getAudioContext();
-    if (!context) return;
-    const start = context.currentTime + delay;
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    oscillator.type = type;
-    oscillator.frequency.setValueAtTime(frequency, start);
-    gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(volume, start + 0.008);
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-    oscillator.connect(gain);
-    gain.connect(context.destination);
-    oscillator.start(start);
-    oscillator.stop(start + duration + 0.015);
-  };
-
-  const playSound = (name: SoundName) => {
-    if (muted) return;
-    const now = performance.now();
-    if (name === "hover" && now - lastSoundAt < 300) return;
-    lastSoundAt = now;
-    // Never initialize audio from hover alone; wait for a click or key activation first.
-    if (name === "hover" && !audioContext) return;
-    switch (name) {
-      case "hover":
-        tone(560, 0.028, 0.006, "sine");
-        break;
-      case "toggle":
-        tone(330, 0.045, 0.015, "triangle");
-        tone(495, 0.055, 0.012, "sine", 0.035);
-        break;
-      case "shuffle":
-        [190, 250, 210, 290, 235, 340].forEach((frequency, index) => {
-          tone(frequency, 0.045, 0.012, "triangle", index * 0.055);
-        });
-        break;
-      case "reveal":
-        tone(240, 0.08, 0.018, "triangle");
-        tone(360, 0.12, 0.014, "sine", 0.055);
-        break;
-      case "success":
-        tone(392, 0.1, 0.018, "sine");
-        tone(523, 0.13, 0.016, "sine", 0.07);
-        tone(659, 0.17, 0.013, "sine", 0.14);
-        break;
-      case "error":
-        tone(185, 0.095, 0.015, "triangle");
-        tone(145, 0.13, 0.012, "triangle", 0.07);
-        break;
-      default:
-        tone(220, 0.045, 0.013, "triangle");
-        tone(420, 0.026, 0.006, "sine", 0.012);
-    }
-  };
-
-  const playSoundSafely = (name: SoundName) => {
-    window.queueMicrotask(() => {
-      try {
-        playSound(name);
-      } catch {
-        // Audio must never interfere with the interaction that triggered it.
-      }
-    });
-  };
-
-  const setMuted = (value: boolean) => {
-    muted = value;
-    try {
-      window.localStorage.setItem("brian-site-sound", muted ? "muted" : "on");
-    } catch {
-      // Sound still works for this page if storage is unavailable.
-    }
-    syncToggle();
-  };
-
-  soundToggle?.addEventListener("click", () => {
-    const willUnmute = muted;
-    setMuted(!muted);
-    if (willUnmute) playSoundSafely("toggle");
-  });
-
-  document.addEventListener("click", (event) => {
-    const target = (event.target as Element).closest<HTMLElement>("a, button");
-    if (!target || target === soundToggle || target.dataset.sound === "none") return;
-    const requested = target.dataset.sound as SoundName | undefined;
-    playSoundSafely(requested ?? "tap");
-  });
-
-  document.addEventListener("pointerover", (event) => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const target = (event.target as Element).closest(
-      ".site-tab[href], .filter-chip, .spin-button, .browse-toggle, .guess-button, .skip-button, .next-photo-button, .photo-filmstrip button",
-    );
-    if (!target || target === lastHoverTarget) return;
-    lastHoverTarget = target;
-    playSoundSafely("hover");
-  });
-
-  document.addEventListener("pointerout", (event) => {
-    const target = (event.target as Element).closest(
-      ".site-tab[href], .filter-chip, .spin-button, .browse-toggle, .guess-button, .skip-button, .next-photo-button, .photo-filmstrip button",
-    );
-    if (target === lastHoverTarget) lastHoverTarget = null;
-  });
-
-  window.addEventListener("site-sound", (event) => {
-    const name = (event as SiteSoundEvent).detail?.name;
-    if (name) playSoundSafely(name);
-  });
-
-  syncToggle();
-</script>

@@ -1,11 +1,13 @@
 ---
 import { categories, cities, prices, recommendations, tiers } from "../data/recommendations";
+import { WORLD_VIEW } from "../lib/recommendations";
 const orderedRecommendations = [...recommendations].sort(
   (a, b) => Number(b.tier === "favorite") - Number(a.tier === "favorite"),
 );
 const defaultCity = cities[0]?.id ?? "";
 const defaultTier = tiers[0]?.id ?? "all";
 const cityCount = (cityId: string) => recommendations.filter(item => item.cityId === cityId).length;
+const orderedCities = [...cities].sort((a, b) => cityCount(b.id) - cityCount(a.id));
 const cityItemNumber = (id: string, cityId: string) =>
   orderedRecommendations.filter(item => item.cityId === cityId).findIndex(item => item.id === id) + 1;
 ---
@@ -13,104 +15,106 @@ const cityItemNumber = (id: string, cityId: string) =>
 <section class="food-guide section-shell" id="field-guide" data-food-guide data-default-city={defaultCity} data-default-tier={defaultTier}>
   <header class="page-heading guide-heading">
     <div>
-      <p class="eyebrow">01 / A food guide</p>
-      <h1>A few <em>good places.</em></h1>
+      <h1>food places i like</h1>
     </div>
-    <p>My restaurant recommendations.</p>
   </header>
 
-  <div class="guide-toolbar" aria-label="Food guide controls">
+  <div class="guide-toolbar" aria-label="food guide controls">
     <div class="city-select-wrap">
-      <label class="control-label" for="guide-city">Exploring</label>
-      <select id="guide-city" data-city-select>
-        {cities.map(city => <option value={city.id}>{city.shortName}</option>)}
+      <select id="guide-city" data-city-select aria-label="city">
+        <option value={WORLD_VIEW} data-world-option disabled>world view</option>
+        {orderedCities.map(city => <option value={city.id} selected={city.id === defaultCity}>{city.shortName.toLowerCase()}</option>)}
       </select>
     </div>
-    <div class="chip-row tier-control" role="group" aria-label="Choose a recommendation list">
+    <div class="chip-row tier-control" role="group" aria-label="choose a recommendation list">
       {tiers.map((tier, index) => (
         <button class="filter-chip tier-chip" type="button" data-tier-button={tier.id} aria-pressed={index === 0}>
           {tier.id === "favorite" && <span aria-hidden="true">★</span>}{tier.label}
         </button>
       ))}
     </div>
+    <button class="filter-toggle" type="button" data-filter-toggle aria-expanded="false" aria-controls="guide-filter-panel" hidden>
+      <span>filters<span data-filter-count hidden></span></span><span class="disclosure-mark" aria-hidden="true">+</span>
+    </button>
   </div>
 
-  <details class="filter-drawer">
-    <summary><span>Filters</span><span class="filter-summary" data-filter-summary>Any cuisine · Any price</span><span class="disclosure-mark" aria-hidden="true">+</span></summary>
-    <div class="filter-drawer-body">
+    <div class="filter-drawer-body" id="guide-filter-panel" data-filter-panel>
       <div class="control-group">
-        <span class="control-label">Price</span>
-        <div class="chip-row" role="group" aria-label="Filter by price">
+        <span class="control-label">price</span>
+        <div class="chip-row" role="group" aria-label="filter by price">
           {prices.map((price, index) => <button class="filter-chip" type="button" data-price-button={price} aria-pressed={index === 0}>{price}</button>)}
         </div>
       </div>
       <div class="control-group">
-        <span class="control-label">Craving</span>
-        <div class="chip-row" role="group" aria-label="Filter by category">
+        <span class="control-label">craving</span>
+        <div class="chip-row" role="group" aria-label="filter by category">
           {categories.map((category, index) => <button class="filter-chip" type="button" data-category-button={category} aria-pressed={index === 0}>{category}</button>)}
         </div>
       </div>
     </div>
-  </details>
-
-  <details class="restaurant-randomizer" data-randomizer>
-    <summary>
-      <span class="draw-mark" aria-hidden="true">✦</span>
-      <span><strong>Random pick</strong><small>Choose a restaurant from this city.</small></span>
-      <span class="disclosure-mark" aria-hidden="true">+</span>
-    </summary>
-    <div class="randomizer-body">
-      <p class="randomizer-copy">Choose from every restaurant in <strong data-randomizer-city>{cities[0]?.shortName}</strong>, regardless of filters.</p>
-      <div class="slot-machine">
-        <div class="slot-window"><span>Cuisine</span><strong data-slot-category>Any cuisine</strong></div>
-        <div class="slot-window"><span>Price</span><strong data-slot-price>Any price</strong></div>
-        <div class="slot-window slot-window-name"><span>Restaurant</span><strong data-slot-restaurant>No selection yet</strong></div>
-        <button class="spin-button" type="button" data-spin-button data-sound="none"><span>Pick a restaurant</span><span aria-hidden="true">↗</span></button>
-      </div>
-      <p class="spin-status" data-spin-status aria-live="polite">Includes all restaurants in this city.</p>
-    </div>
-  </details>
-
   <div class="results-bar">
-    <p role="status"><strong data-result-count>{cityCount(defaultCity)}</strong> places <span class="result-separator">/</span> <span data-edition-label>Austin · All</span></p>
-    <div class="view-switch" role="group" aria-label="Results view">
-      <button type="button" data-guide-view="list" aria-pressed="true">List</button>
-      <button type="button" data-guide-view="map" aria-pressed="false">Map</button>
+    <p role="status"><strong data-result-count>{cityCount(defaultCity)}</strong> places <span class="result-separator">/</span> <span data-edition-label>austin · all</span></p>
+    <div class="results-tools">
+      <button class="randomizer-toggle" type="button" data-randomizer-toggle aria-label="pick randomly" title="pick randomly" aria-expanded="false" aria-controls="restaurant-picker" hidden>
+        <svg viewBox="0 0 20 20" width="20" height="20" fill="none" aria-hidden="true">
+          <rect x="2.5" y="2.5" width="15" height="15" rx="3" stroke="currentColor" stroke-width="1.5" />
+          <g fill="currentColor"><circle cx="6.5" cy="6.5" r="1.2" /><circle cx="10" cy="10" r="1.2" /><circle cx="13.5" cy="13.5" r="1.2" /></g>
+        </svg>
+        <span>pick randomly</span>
+      </button>
+      <div class="view-switch" role="group" aria-label="results view">
+        <button type="button" data-guide-view="list" aria-pressed="true">list</button>
+        <button type="button" data-guide-view="map" aria-pressed="false">map</button>
+      </div>
     </div>
-    <span class="desktop-map-hint">Select a place to find it on the map <span aria-hidden="true">↗</span></span>
+  </div>
+  <div class="restaurant-randomizer" id="restaurant-picker" data-randomizer role="region" aria-label="random restaurant picker">
+    <div class="randomizer-body">
+      <div class="slot-machine">
+        <div class="slot-window"><span>cuisine</span><strong data-slot-category>any cuisine</strong></div>
+        <div class="slot-window"><span>price</span><strong data-slot-price>any price</strong></div>
+        <div class="slot-window slot-window-name"><span>restaurant</span><strong data-slot-restaurant role="status" aria-live="polite" aria-atomic="true">no selection yet</strong></div>
+        <button class="spin-button" type="button" data-spin-button data-sound="none"><span>pick a restaurant</span><span aria-hidden="true">↗</span></button>
+      </div>
+    </div>
   </div>
   <div class="guide-layout">
     <div class="recommendation-panel">
-      <div class="recommendation-list" data-recommendation-list aria-label="Restaurant recommendations" tabindex="0">
+      <div class="recommendation-list" data-recommendation-list aria-label="restaurant recommendations" tabindex="0">
         {orderedRecommendations.map(item => (
           <article class="recommendation-card" data-recommendation={item.id} data-city={item.cityId} data-category={item.category} data-tier={item.tier} data-price={item.price} hidden={item.cityId !== defaultCity}>
-            {item.tier === "favorite" && <span class="card-star" aria-label="Brian’s favorite" title="Brian’s favorite">★</span>}
-            <button class="card-select" type="button" aria-pressed="false" aria-label={`Select ${item.name}`}>
+            {item.tier === "favorite" && (
+              <span class="card-favorite" data-favorite>
+                <button class="card-star" type="button" aria-label="favorite restaurant" aria-describedby={`${item.id}-favorite-tip`} data-sound="none">★</button>
+                <span class="favorite-tooltip" id={`${item.id}-favorite-tip`} role="tooltip" hidden>one of my favorites.</span>
+              </span>
+            )}
+            <button class="card-select" type="button" aria-pressed="false" aria-label={`select ${item.name}`}>
               <span class="card-index">{String(cityItemNumber(item.id, item.cityId)).padStart(2, "0")}</span>
               <span class="card-copy">
                 <span class="card-meta"><span>{item.category}</span><span>{item.price}</span></span>
                 <strong class="card-name">{item.name}</strong>
                 <span class="card-neighborhood">{item.neighborhood}</span>
-                {item.order && <span class="card-order"><i>Order:</i> {item.order}</span>}
+                {item.order && <span class="card-order"><i>order:</i> {item.order}</span>}
               </span>
             </button>
-            {item.directionsUrl && <a class="directions-link" href={item.directionsUrl} target="_blank" rel="noreferrer">Directions <span aria-hidden="true">↗</span></a>}
+            {item.directionsUrl && <a class="directions-link" href={item.directionsUrl} target="_blank" rel="noreferrer">directions <span aria-hidden="true">↗</span></a>}
           </article>
         ))}
       </div>
-      <div class="empty-state" data-empty-state hidden><span aria-hidden="true">◇</span><p>No places match those filters yet.</p></div>
+      <div class="empty-state" data-empty-state hidden><span aria-hidden="true">◇</span><p>no places match those filters yet.</p></div>
     </div>
     <div class="map-card" id="restaurant-map">
       <div class="map-chrome"><span class="map-light" aria-hidden="true"></span><span data-map-city>{cities[0]?.name}</span></div>
-      <div class="map-stage"><div class="real-map" data-real-map aria-label={`Map of ${cities[0]?.shortName} restaurant recommendations`}></div></div>
+      <div class="map-stage"><div class="real-map" data-real-map aria-label={`map of ${cities[0]?.shortName} restaurant recommendations`}></div></div>
     </div>
   </div>
-  <p class="sample-note">Check hours and menus with the restaurant before visiting.</p>
 </section>
 
 <script>
   import L from "leaflet";
   import { prefersReducedMotion, scrollBehavior } from "../lib/motion";
+  import { WORLD_VIEW, filterRecommendations, groupMapRecommendations } from "../lib/recommendations";
   import "leaflet/dist/leaflet.css";
   import { restaurantFlagIcons, restaurantCuisineCountries, cities, recommendations, tiers } from "../data/recommendations";
   import type {
@@ -120,8 +124,67 @@ const cityItemNumber = (id: string, cityId: string) =>
   } from "../data/recommendations";
 
   const guide = document.querySelector<HTMLElement>("[data-food-guide]");
+  const filterToggle = guide?.querySelector<HTMLButtonElement>("[data-filter-toggle]");
+  const filterPanel = guide?.querySelector<HTMLElement>("[data-filter-panel]");
+  if (filterToggle && filterPanel) {
+    const setFiltersOpen = (open: boolean) => {
+      filterToggle.setAttribute("aria-expanded", String(open));
+      filterPanel.hidden = !open;
+    };
+    setFiltersOpen(false);
+    filterToggle.hidden = false;
+    filterToggle.addEventListener("click", () => {
+      setFiltersOpen(filterToggle.getAttribute("aria-expanded") !== "true");
+    });
+    filterPanel.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      setFiltersOpen(false);
+      filterToggle.focus();
+    });
+  }
+  const pickerToggle = guide?.querySelector<HTMLButtonElement>("[data-randomizer-toggle]");
+  const pickerPanel = guide?.querySelector<HTMLElement>("[data-randomizer]");
+  if (pickerToggle && pickerPanel) {
+    const setPickerOpen = (open: boolean) => {
+      pickerToggle.setAttribute("aria-expanded", String(open));
+      pickerPanel.hidden = !open;
+    };
+    setPickerOpen(false);
+    pickerToggle.hidden = false;
+    pickerToggle.addEventListener("click", () => {
+      setPickerOpen(pickerToggle.getAttribute("aria-expanded") !== "true");
+    });
+    pickerPanel.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      setPickerOpen(false);
+      pickerToggle.focus();
+    });
+  }
   const mapElement = guide?.querySelector<HTMLElement>("[data-real-map]");
   const defaultCityData = cities[0];
+
+  const hideFavoriteTooltips = () => {
+    guide?.querySelectorAll<HTMLElement>(".favorite-tooltip").forEach((tooltip) => { tooltip.hidden = true; });
+  };
+  guide?.querySelectorAll<HTMLElement>("[data-favorite]").forEach((favorite) => {
+    const tooltip = favorite.querySelector<HTMLElement>("[role='tooltip']")!;
+    const show = () => { hideFavoriteTooltips(); tooltip.hidden = false; };
+    favorite.addEventListener("pointerenter", show);
+    favorite.addEventListener("focusin", show);
+    favorite.querySelector("button")?.addEventListener("click", show);
+    favorite.addEventListener("pointerleave", () => {
+      if (!favorite.contains(document.activeElement)) tooltip.hidden = true;
+    });
+    favorite.addEventListener("focusout", (event) => {
+      if (!favorite.contains(event.relatedTarget as Node | null)) tooltip.hidden = true;
+    });
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") hideFavoriteTooltips();
+  });
+  document.addEventListener("click", (event) => {
+    if (!(event.target instanceof Element) || !event.target.closest("[data-favorite]")) hideFavoriteTooltips();
+  });
 
   if (guide && mapElement && defaultCityData) {
     const guideRecommendations: Recommendation[] = recommendations;
@@ -132,7 +195,7 @@ const cityItemNumber = (id: string, cityId: string) =>
     let activeRecommendation = "";
 
     const citySelect = guide.querySelector<HTMLSelectElement>("[data-city-select]");
-    const filterSummary = guide.querySelector<HTMLElement>("[data-filter-summary]");
+    const filterCount = guide.querySelector<HTMLElement>("[data-filter-count]");
     const tierButtons = Array.from(guide.querySelectorAll<HTMLButtonElement>("[data-tier-button]"));
     const categoryButtons = Array.from(guide.querySelectorAll<HTMLButtonElement>("[data-category-button]"));
     const priceButtons = Array.from(guide.querySelectorAll<HTMLButtonElement>("[data-price-button]"));
@@ -142,12 +205,10 @@ const cityItemNumber = (id: string, cityId: string) =>
     const mapCity = guide.querySelector<HTMLElement>("[data-map-city]");
     const editionLabel = guide.querySelector<HTMLElement>("[data-edition-label]");
     const randomizer = guide.querySelector<HTMLElement>("[data-randomizer]");
-    const randomizerCity = guide.querySelector<HTMLElement>("[data-randomizer-city]");
     const slotCategory = guide.querySelector<HTMLElement>("[data-slot-category]");
     const slotPrice = guide.querySelector<HTMLElement>("[data-slot-price]");
     const slotRestaurant = guide.querySelector<HTMLElement>("[data-slot-restaurant]");
     const spinButton = guide.querySelector<HTMLButtonElement>("[data-spin-button]");
-    const spinStatus = guide.querySelector<HTMLElement>("[data-spin-status]");
     let renderedRandomizerCity = activeCity;
     let lastRandomRecommendation = "";
     let finishPendingDraw: (() => void) | null = null;
@@ -164,6 +225,10 @@ const cityItemNumber = (id: string, cityId: string) =>
         map.stop();
         finishPendingDraw?.();
       }
+      markers.forEach(marker => {
+        const popup = marker.getPopup();
+        if (popup) popup.options.autoPan = !motionQuery.matches;
+      });
     });
     window.addEventListener("pagehide", cancelDraw);
 
@@ -196,6 +261,42 @@ const cityItemNumber = (id: string, cityId: string) =>
     };
     viewButtons.forEach(button => button.addEventListener("click", () => setView(button.dataset.guideView ?? "list")));
     const markers = new Map<string, L.Marker>();
+    const worldClusters = L.layerGroup().addTo(map);
+
+    const restaurantPopup = (item: Recommendation) => {
+      const content = document.createElement("section");
+      content.className = "restaurant-popup";
+      content.tabIndex = -1;
+      content.setAttribute("role", "dialog");
+      content.setAttribute("aria-label", `${item.name.toLowerCase()} details`);
+      content.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape") return;
+        event.preventDefault();
+        event.stopPropagation();
+        map.closePopup();
+        markers.get(item.id)?.getElement()?.focus({ preventScroll: true });
+      });
+      const append = (tag: string, className: string, text: string) => {
+        const element = document.createElement(tag);
+        element.className = className;
+        element.textContent = text;
+        content.append(element);
+        return element;
+      };
+      append("p", "popup-meta", `${item.category} · ${item.price}`);
+      append("h2", "popup-name", item.name);
+      const city = cities.find(city => city.id === item.cityId);
+      append("p", "popup-location", [item.neighborhood, city?.name].filter(Boolean).join(" · "));
+      if (item.tier === "favorite") append("p", "popup-favorite", "★ one of my favorites");
+      if (item.order) append("p", "popup-order", `order: ${item.order}`);
+      if (item.directionsUrl) {
+        const link = append("a", "popup-directions", "directions") as HTMLAnchorElement;
+        link.href = item.directionsUrl;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+      }
+      return content;
+    };
 
     const addMarker = (item: Recommendation) => {
       const markerWidth = 34 + (restaurantCuisineCountries(item).length - 1) * 25;
@@ -213,24 +314,85 @@ const cityItemNumber = (id: string, cityId: string) =>
         alt: `${item.name}, ${item.category} in ${item.neighborhood}`,
         riseOnHover: true,
       }).bindTooltip(item.name, { direction: "top", offset: [0, -16] });
+      marker.bindPopup(() => {
+        const popup = marker.getPopup();
+        if (popup) {
+          popup.options.maxWidth = Math.max(180, Math.min(260, mapElement.clientWidth - 64));
+          popup.options.autoPan = !prefersReducedMotion();
+        }
+        return restaurantPopup(item);
+      }, {
+        minWidth: 180, maxWidth: 260, maxHeight: 240, autoPan: !prefersReducedMotion(),
+      });
       marker.on("click", () => {
+        if (activeCity === WORLD_VIEW) {
+          selectRecommendation(item.id);
+          marker.closeTooltip();
+          const popup = marker.getPopup();
+          if (popup) popup.options.autoPan = !prefersReducedMotion();
+          if (prefersReducedMotion()) map.panTo(marker.getLatLng(), { animate: false });
+          marker.openPopup();
+          return;
+        }
+        marker.closePopup();
         setView("list");
         selectRecommendation(item.id, true);
         guide.querySelector<HTMLButtonElement>(`[data-recommendation="${item.id}"] .card-select`)?.focus({ preventScroll: true });
+      });
+      marker.on("popupopen", () => {
+        if (activeCity !== WORLD_VIEW) { marker.closePopup(); return; }
+        window.requestAnimationFrame(() => {
+          const popup = marker.getPopup();
+          if (popup && map.hasLayer(popup) && activeCity === WORLD_VIEW) {
+            popup.getElement()?.querySelector<HTMLElement>(".restaurant-popup")?.focus({ preventScroll: true });
+          }
+        });
+      });
+      marker.on("popupclose", (event) => {
+        if (activeCity === WORLD_VIEW && (document.activeElement === document.body
+          || event.popup.getElement()?.contains(document.activeElement))) {
+          marker.getElement()?.focus({ preventScroll: true });
+        }
       });
       markers.set(item.id, marker);
     };
 
     guideRecommendations.forEach(addMarker);
 
+    const renderWorldMarkers = () => {
+      if (activeCity !== WORLD_VIEW) return;
+      worldClusters.clearLayers();
+      markers.forEach(marker => marker.removeFrom(map));
+      const groups = map.getZoom() >= 14
+        ? guideRecommendations.map(item => [item])
+        : groupMapRecommendations(guideRecommendations, item => map.project(
+          [item.coordinates.lat, item.coordinates.lng], map.getZoom(),
+        ));
+      groups.forEach(group => {
+        if (group.length === 1) { markers.get(group[0]!.id)?.addTo(map); return; }
+        const bounds = L.latLngBounds(group.map(item => [item.coordinates.lat, item.coordinates.lng] as L.LatLngTuple));
+        const count = group.length;
+        const cluster = L.marker(bounds.getCenter(), {
+          icon: L.divIcon({
+            className: "restaurant-cluster-shell", iconSize: [44, 44], iconAnchor: [22, 22],
+            html: `<span class="restaurant-cluster">${count}</span>`,
+          }),
+          keyboard: true, title: `${count} restaurants — zoom in`, alt: `${count} restaurants — zoom in`,
+        });
+        cluster.on("click", () => {
+          map.setView(bounds.getCenter(), Math.min(18, Math.max(map.getZoom() + 2,
+            map.getBoundsZoom(bounds, false, L.point(64, 64)))), { animate: !prefersReducedMotion() });
+        });
+        worldClusters.addLayer(cluster);
+      });
+      markers.get(activeRecommendation)?.getElement()?.classList.add("is-active");
+    };
+    map.on("zoomend", renderWorldMarkers);
+
     const fitCity = () => {
       // A mobile map hidden behind the List tab has no usable bounds yet.
       if (!mapElement.clientWidth || !mapElement.clientHeight) return;
-      const points = guideRecommendations
-        .filter((item) => item.cityId === activeCity
-          && (activeTier === "all" || item.tier === activeTier)
-          && (activeCategory === "All" || item.category === activeCategory)
-          && (activePrice === "All" || item.price === activePrice))
+      const points = filterRecommendations(guideRecommendations, activeCity, activeCategory, activeTier, activePrice)
         .map((item) => [item.coordinates.lat, item.coordinates.lng] as L.LatLngTuple);
       if (points.length > 1) {
         map.fitBounds(L.latLngBounds(points), { padding: [42, 42], maxZoom: 12, animate: !prefersReducedMotion() });
@@ -241,6 +403,11 @@ const cityItemNumber = (id: string, cityId: string) =>
         map.setView([city.center.lat, city.center.lng], city.zoom, { animate: !prefersReducedMotion() });
       }
     };
+    map.on("resize", () => {
+      if (activeCity !== WORLD_VIEW) return;
+      fitCity();
+      renderWorldMarkers();
+    });
 
     const selectRecommendation = (id: string, scrollCard = false) => {
       activeRecommendation = id;
@@ -273,12 +440,42 @@ const cityItemNumber = (id: string, cityId: string) =>
     };
 
     const showSlotResult = (item?: Recommendation) => {
-      if (slotCategory) slotCategory.textContent = item?.category ?? "Any cuisine";
-      if (slotPrice) slotPrice.textContent = item?.price ?? "Any price";
-      if (slotRestaurant) slotRestaurant.textContent = item?.name ?? "No selection yet";
+      if (slotCategory) slotCategory.textContent = item?.category ?? "any cuisine";
+      if (slotPrice) slotPrice.textContent = item?.price ?? "any price";
+      if (slotRestaurant) slotRestaurant.textContent = item?.name ?? "no selection yet";
     };
 
     const updateGuide = (refitMap = false) => {
+      const world = activeCity === WORLD_VIEW;
+      guide.dataset.mapMode = world ? "world" : "city";
+      guide.querySelector<HTMLElement>(".tier-control")!.hidden = world;
+      guide.querySelector<HTMLElement>(".view-switch")!.hidden = world;
+      if (filterToggle) filterToggle.hidden = world;
+      if (pickerToggle) pickerToggle.hidden = world;
+      map.closePopup();
+      worldClusters.clearLayers();
+      if (world) {
+        if (filterPanel) filterPanel.hidden = true;
+        filterToggle?.setAttribute("aria-expanded", "false");
+        if (pickerPanel) pickerPanel.hidden = true;
+        pickerToggle?.setAttribute("aria-expanded", "false");
+        hideFavoriteTooltips();
+        if (citySelect) {
+          citySelect.value = WORLD_VIEW;
+          Array.from(citySelect.options).forEach(option => { option.disabled = false; });
+        }
+        cards.forEach(card => { card.hidden = true; });
+        const worldItems = filterRecommendations(guideRecommendations, WORLD_VIEW, "All");
+        if (resultCount) resultCount.textContent = String(worldItems.length);
+        if (editionLabel) editionLabel.textContent = "world view";
+        if (mapCity) mapCity.textContent = "world view";
+        mapElement.setAttribute("aria-label", "world map of all restaurant recommendations");
+        selectRecommendation("");
+        map.invalidateSize({ animate: false });
+        if (refitMap) fitCity();
+        renderWorldMarkers();
+        return;
+      }
       const cityCounts = new Map(
         cities.map((city) => [
           city.id,
@@ -326,12 +523,16 @@ const cityItemNumber = (id: string, cityId: string) =>
       if (citySelect) {
         citySelect.value = activeCity;
         Array.from(citySelect.options).forEach(option => {
+          if (option.value === WORLD_VIEW) { option.disabled = false; return; }
           const count = cityCounts.get(option.value) ?? 0;
           option.disabled = count === 0;
         });
       }
-      if (filterSummary) filterSummary.textContent =
-        `${activeCategory === "All" ? "Any cuisine" : activeCategory} · ${activePrice === "All" ? "Any price" : activePrice}`;
+      if (filterCount) {
+        const count = Number(activeCategory !== "All") + Number(activePrice !== "All");
+        filterCount.textContent = ` (${count})`;
+        filterCount.hidden = count === 0;
+      }
       categoryButtons.forEach((button) => {
         const category = button.dataset.categoryButton ?? "All";
         button.hidden = category !== "All" && !cityCategories.has(category);
@@ -346,14 +547,12 @@ const cityItemNumber = (id: string, cityId: string) =>
       const city = cities.find((item) => item.id === activeCity) ?? defaultCityData;
       const tier = tiers.find((item) => item.id === activeTier) ?? tiers[0];
       if (mapCity) mapCity.textContent = city.name;
-      if (randomizerCity) randomizerCity.textContent = city.shortName;
       if (renderedRandomizerCity !== activeCity && !randomizer?.classList.contains("is-spinning")) {
         renderedRandomizerCity = activeCity;
         lastRandomRecommendation = "";
         showSlotResult();
-        if (spinStatus) spinStatus.textContent = "Includes all restaurants in this city.";
       }
-      mapElement.setAttribute("aria-label", `Map of ${city.shortName} restaurant recommendations`);
+      mapElement.setAttribute("aria-label", `map of ${city.shortName} restaurant recommendations`);
       if (editionLabel) editionLabel.textContent = `${city.shortName} · ${tier?.label ?? "List"}`;
 
       const visibleIds: string[] = [];
@@ -384,6 +583,7 @@ const cityItemNumber = (id: string, cityId: string) =>
         ? activeRecommendation
         : (visibleIds[0] ?? "");
       selectRecommendation(nextSelection);
+      map.invalidateSize({ animate: false });
       if (refitMap) fitCity();
     };
 
@@ -432,20 +632,16 @@ const cityItemNumber = (id: string, cityId: string) =>
         selectRecommendation(winner.id);
         map.setView([winner.coordinates.lat, winner.coordinates.lng], 14, { animate: !prefersReducedMotion() });
         markers.get(winner.id)?.openTooltip();
-        if (spinStatus) spinStatus.textContent = `Tonight’s pick: ${winner.name}. Selected in the list below.`;
         randomizer?.classList.add("has-result");
-        window.dispatchEvent(new CustomEvent("site-sound", { detail: { name: "reveal" } }));
       };
       if (prefersReducedMotion()) { finish(); return; }
       spinButton.disabled = true;
       randomizer?.classList.remove("has-result");
       randomizer?.classList.add("is-spinning");
-      if (spinStatus) spinStatus.textContent = "Choosing a restaurant…";
       if (slotCategory) slotCategory.textContent = "…";
       if (slotPrice) slotPrice.textContent = "…";
-      if (slotRestaurant) slotRestaurant.textContent = "A good place awaits.";
+      if (slotRestaurant) slotRestaurant.textContent = "…";
       finishPendingDraw = finish;
-      window.dispatchEvent(new CustomEvent("site-sound", { detail: { name: "shuffle" } }));
       drawTimers.push(window.setTimeout(() => { if (slotCategory) slotCategory.textContent = winner.category; }, 260));
       drawTimers.push(window.setTimeout(() => { if (slotPrice) slotPrice.textContent = winner.price; }, 460));
       drawTimers.push(window.setTimeout(finish, 720));

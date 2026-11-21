@@ -1,8 +1,41 @@
 import { describe, expect, it } from "vitest";
 import { cities, recommendations, restaurantFlagIcons, restaurantCuisineCountries } from "../data/recommendations";
-import { filterRecommendations, firstVisibleRecommendation } from "./recommendations";
+import { WORLD_VIEW, filterRecommendations, firstVisibleRecommendation, groupMapRecommendations } from "./recommendations";
 
 describe("recommendation filters", () => {
+  it("shows every city in world view despite previously selected city filters", () => {
+    const world = filterRecommendations(recommendations, WORLD_VIEW, "Japanese", "favorite", "$$$$");
+    expect(world).toEqual(recommendations);
+    expect(new Set(world.map(item => item.cityId)).size).toBe(cities.length);
+    expect(world).not.toBe(recommendations);
+  });
+
+  it("groups nearby map points while leaving distant restaurants individually reachable", () => {
+    const items = recommendations.slice(0, 3);
+    const points = [{ x: 10, y: 10 }, { x: 22, y: 15 }, { x: 160, y: 140 }];
+    const groups = groupMapRecommendations(items, item => points[items.indexOf(item)]!);
+    expect(groups.map(group => group.map(item => item.id))).toEqual([
+      [items[0]!.id, items[1]!.id], [items[2]!.id],
+    ]);
+  });
+
+  it("keeps every recommendation exactly once across map clusters", () => {
+    const groups = groupMapRecommendations(recommendations, item => ({
+      x: item.coordinates.lng * 10, y: item.coordinates.lat * 10,
+    }));
+    const ids = groups.flat().map(item => item.id);
+    expect(ids.sort()).toEqual(recommendations.map(item => item.id).sort());
+    expect(new Set(ids).size).toBe(recommendations.length);
+    expect(groupMapRecommendations([], () => ({ x: 0, y: 0 }))).toEqual([]);
+  });
+
+  it("groups adjacent points even across a projected grid boundary", () => {
+    const items = recommendations.slice(0, 2);
+    const groups = groupMapRecommendations(items, item => ({
+      x: item === items[0] ? 47 : 49, y: 48,
+    }));
+    expect(groups).toEqual([items]);
+  });
   it("uses local country flags for every restaurant, including broad and mixed cuisines", () => {
     for (const item of recommendations) {
       const icons = restaurantFlagIcons(item);
